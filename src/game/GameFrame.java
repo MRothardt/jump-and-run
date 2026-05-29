@@ -6,8 +6,13 @@ public class GameFrame extends JFrame {
 
     public GameFrame() {
         setTitle("Jump and Run");
-        setSize(400, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setResizable(false);
+
+        GamePanel gamePanel = new GamePanel();
+        add(gamePanel);
+
+        pack();
         setLocationRelativeTo(null);
     }
 }
