@@ -10,46 +10,46 @@ public class Player {
 
     private int x;
     private int y;
-    private int width;
-    private int height;
+    private int breite;
+    private int hoehe;
 
-    private int velocityX;
-    private int velocityY;
+    private int geschwindigkeitX;
+    private int geschwindigkeitY;
 
-    private boolean onGround;
+    private boolean stehtAufBoden;
 
-    private final int speed = 5;
-    private final int jumpStrength = -15;
-    private final int gravity = 1;
+    private final int laufGeschwindigkeit = 5;
+    private final int sprungKraft = -15;
+    private final int gravitation = 1;
 
     public Player(int x, int y) {
         this.x = x;
         this.y = y;
-        this.width = 40;
-        this.height = 40;
-        this.onGround = false;
+        this.breite = 40;
+        this.hoehe = 40;
+        this.stehtAufBoden = false;
     }
 
-    public void update(boolean leftPressed, boolean rightPressed, boolean spacePressed) {
-        velocityX = 0;
+    public void update(boolean linksGedrueckt, boolean rechtsGedrueckt, boolean springenGedrueckt) {
+        geschwindigkeitX = 0;
 
-        if (leftPressed) {
-            velocityX = -speed;
+        if (linksGedrueckt) {
+            geschwindigkeitX = -laufGeschwindigkeit;
         }
 
-        if (rightPressed) {
-            velocityX = speed;
+        if (rechtsGedrueckt) {
+            geschwindigkeitX = laufGeschwindigkeit;
         }
 
-        if (spacePressed && onGround) {
-            velocityY = jumpStrength;
-            onGround = false;
+        if (springenGedrueckt && stehtAufBoden) {
+            geschwindigkeitY = sprungKraft;
+            stehtAufBoden = false;
         }
 
-        velocityY += gravity;
+        geschwindigkeitY += gravitation;
 
-        x += velocityX;
-        y += velocityY;
+        x += geschwindigkeitX;
+        y += geschwindigkeitY;
 
         if (x < 0) {
             x = 0;
@@ -62,17 +62,21 @@ public class Player {
 
     public void draw(Graphics g) {
         g.setColor(Color.BLUE);
-        g.fillRect(x, y, width, height);
+        g.fillRect(x, y, breite, hoehe);
     }
 
-    public void landOnPlatform(int platformY) {
-        y = platformY - height;
-        velocityY = 0;
-        onGround = true;
+    public void landOnPlatform(int plattformY) {
+        y = plattformY - hoehe;
+        geschwindigkeitY = 0;
+        stehtAufBoden = true;
     }
 
-    public void setOnGround(boolean onGround) {
-        this.onGround = onGround;
+    public void setOnGround(boolean stehtAufBoden) {
+        this.stehtAufBoden = stehtAufBoden;
+    }
+
+    public void bewegeNachUnten(int distanz) {
+        y += distanz;
     }
 
     public int getX() {
@@ -84,14 +88,14 @@ public class Player {
     }
 
     public int getWidth() {
-        return width;
+        return breite;
     }
 
     public int getHeight() {
-        return height;
+        return hoehe;
     }
 
     public int getVelocityY() {
-        return velocityY;
+        return geschwindigkeitY;
     }
 }

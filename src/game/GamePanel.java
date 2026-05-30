@@ -20,6 +20,7 @@ public class GamePanel extends JPanel {
 
     private final int bildschirmBreite = 400;
     private final int bildschirmHoehe = 600;
+    private final int kameraGrenze = 250;
 
     private Player spieler;
     private PlatformManager plattformManager;
@@ -32,7 +33,6 @@ public class GamePanel extends JPanel {
     private Timer timer;
 
     private int punktzahl;
-    private int hoechstePosition;
 
     public GamePanel() {
         setPreferredSize(new Dimension(bildschirmBreite, bildschirmHoehe));
@@ -71,19 +71,33 @@ public class GamePanel extends JPanel {
 
         kollisionsManager.checkPlatformCollision(spieler, plattformManager);
 
-        lava.aktualisieren();
+        plattformManager.aktualisieren();
 
-        scoreAktualisieren();
+        kameraAktualisieren();
+
+        // Die Lava steigt langsam. Wenn der Spieler nicht weiterkommt,
+        // holt die Lava ihn irgendwann ein.
+        lava.aktualisieren();
 
         if (kollisionsManager.checkLavaCollision(spieler, lava)) {
             spielZustand = GameState.GAME_OVER;
         }
     }
 
-    private void scoreAktualisieren() {
-        if (spieler.getY() < hoechstePosition) {
-            punktzahl += hoechstePosition - spieler.getY();
-            hoechstePosition = spieler.getY();
+    private void kameraAktualisieren() {
+        if (spieler.getY() < kameraGrenze) {
+            int verschiebung = kameraGrenze - spieler.getY();
+
+            spieler.bewegeNachUnten(verschiebung);
+            plattformManager.bewegeAllePlattformenNachUnten(verschiebung);
+
+            // Wenn der Spieler wirklich Fortschritt macht,
+            // wird die Lava wieder nach unten gedrückt.
+            // Dadurch bleibt sie meistens im unteren Bereich,
+            // steigt aber trotzdem, wenn man zu lange stehen bleibt.
+            lava.nachUntenDruecken(verschiebung);
+
+            punktzahl += verschiebung;
         }
     }
 
@@ -92,9 +106,7 @@ public class GamePanel extends JPanel {
         plattformManager = new PlatformManager();
         lava = new Lava(bildschirmBreite, bildschirmHoehe);
         spielZustand = GameState.RUNNING;
-
         punktzahl = 0;
-        hoechstePosition = spieler.getY();
 
         requestFocusInWindow();
     }

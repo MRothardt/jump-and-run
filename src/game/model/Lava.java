@@ -1,6 +1,6 @@
 // Beschreibt die Lava im Spiel.
-// Die Lava ist die Gefahr am unteren Bildschirmrand.
-// Wenn der Spieler die Lava berührt oder zu tief fällt, ist das Spiel vorbei.
+// Die Lava bleibt grundsätzlich im unteren Bildschirmbereich.
+// Wenn der Spieler zu lange stehen bleibt, steigt sie langsam nach oben.
 package game.model;
 
 import java.awt.Color;
@@ -9,45 +9,53 @@ import java.awt.Graphics;
 public class Lava {
 
     private int x;
-    private int y;
-    private int width;
-    private int height;
+    private double y;
+    private int breite;
+    private int bildschirmHoehe;
 
-    private int zaehler;
-    private int bewegungIntervall;
+    private double lavaGeschwindigkeit;
 
     public Lava(int bildschirmBreite, int bildschirmHoehe) {
         this.x = 0;
-        this.height = 40;
-        this.width = bildschirmBreite;
-        this.y = bildschirmHoehe - height;
+        this.breite = bildschirmBreite;
+        this.bildschirmHoehe = bildschirmHoehe;
 
-        this.zaehler = 0;
-        this.bewegungIntervall = 20; // Je höher die Zahl, desto langsamer steigt die Lava
+        this.y = bildschirmHoehe - 40;
+
+        // Sehr langsam, damit die Lava nur Druck macht, wenn man zu lange stehen bleibt.
+        this.lavaGeschwindigkeit = 0.08;
     }
 
     public void aktualisieren() {
-        zaehler++;
+        y -= lavaGeschwindigkeit;
+    }
 
-        if (zaehler >= bewegungIntervall) {
-            y = y - 1;
-            zaehler = 0;
+    public void nachUntenDruecken(int distanz) {
+        y += distanz;
+
+        int tiefsteErlaubtePosition = bildschirmHoehe - 40;
+
+        if (y > tiefsteErlaubtePosition) {
+            y = tiefsteErlaubtePosition;
         }
     }
 
     public void draw(Graphics g) {
+        int lavaY = (int) y;
+        int lavaHoehe = bildschirmHoehe - lavaY;
+
         g.setColor(Color.RED);
-        g.fillRect(x, y, width, height);
+        g.fillRect(x, lavaY, breite, lavaHoehe);
 
         g.setColor(Color.ORANGE);
-        g.fillRect(x, y, width, 8);
+        g.fillRect(x, lavaY, breite, 8);
     }
 
     public int getY() {
-        return y;
+        return (int) y;
     }
 
     public int getHeight() {
-        return height;
+        return bildschirmHoehe - (int) y;
     }
 }
