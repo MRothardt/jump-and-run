@@ -31,6 +31,9 @@ public class GamePanel extends JPanel {
 
     private Timer timer;
 
+    private int punktzahl;
+    private int hoechstePosition;
+
     public GamePanel() {
         setPreferredSize(new Dimension(bildschirmBreite, bildschirmHoehe));
         setBackground(Color.DARK_GRAY);
@@ -68,8 +71,19 @@ public class GamePanel extends JPanel {
 
         kollisionsManager.checkPlatformCollision(spieler, plattformManager);
 
+        lava.aktualisieren();
+
+        scoreAktualisieren();
+
         if (kollisionsManager.checkLavaCollision(spieler, lava)) {
             spielZustand = GameState.GAME_OVER;
+        }
+    }
+
+    private void scoreAktualisieren() {
+        if (spieler.getY() < hoechstePosition) {
+            punktzahl += hoechstePosition - spieler.getY();
+            hoechstePosition = spieler.getY();
         }
     }
 
@@ -78,6 +92,9 @@ public class GamePanel extends JPanel {
         plattformManager = new PlatformManager();
         lava = new Lava(bildschirmBreite, bildschirmHoehe);
         spielZustand = GameState.RUNNING;
+
+        punktzahl = 0;
+        hoechstePosition = spieler.getY();
 
         requestFocusInWindow();
     }
@@ -90,14 +107,27 @@ public class GamePanel extends JPanel {
         lava.draw(g);
         spieler.draw(g);
 
-        if (spielZustand == GameState.GAME_OVER) {
-            g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 36));
-            g.drawString("GAME OVER", 85, 260);
+        scoreZeichnen(g);
 
-            g.setFont(new Font("Arial", Font.PLAIN, 18));
-            g.drawString("Du bist in die Lava gefallen", 80, 300);
-            g.drawString("Drücke R zum Neustarten", 85, 330);
+        if (spielZustand == GameState.GAME_OVER) {
+            gameOverZeichnen(g);
         }
+    }
+
+    private void scoreZeichnen(Graphics g) {
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.drawString("Score: " + punktzahl, 15, 25);
+    }
+
+    private void gameOverZeichnen(Graphics g) {
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.BOLD, 36));
+        g.drawString("GAME OVER", 85, 250);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 18));
+        g.drawString("Du bist in die Lava gefallen", 80, 290);
+        g.drawString("Score: " + punktzahl, 150, 320);
+        g.drawString("Drücke R zum Neustarten", 85, 350);
     }
 }

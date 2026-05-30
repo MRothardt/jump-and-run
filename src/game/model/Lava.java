@@ -13,11 +13,26 @@ public class Lava {
     private int width;
     private int height;
 
-    public Lava(int screenWidth, int screenHeight) {
+    private int zaehler;
+    private int bewegungIntervall;
+
+    public Lava(int bildschirmBreite, int bildschirmHoehe) {
         this.x = 0;
         this.height = 40;
-        this.width = screenWidth;
-        this.y = screenHeight - height;
+        this.width = bildschirmBreite;
+        this.y = bildschirmHoehe - height;
+
+        this.zaehler = 0;
+        this.bewegungIntervall = 20; // Je höher die Zahl, desto langsamer steigt die Lava
+    }
+
+    public void aktualisieren() {
+        zaehler++;
+
+        if (zaehler >= bewegungIntervall) {
+            y = y - 1;
+            zaehler = 0;
+        }
     }
 
     public void draw(Graphics g) {
