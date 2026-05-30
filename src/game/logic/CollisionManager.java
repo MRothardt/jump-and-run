@@ -1,8 +1,9 @@
 // Prüft Kollisionen zwischen Spielobjekten.
 // Aktuell wird geprüft, ob der Spieler auf einer Plattform landet.
-// Später kann hier auch die Kollision mit der Lava geprüft werden.
+// Zusätzlich wird geprüft, ob der Spieler die Lava berührt.
 package game.logic;
 
+import game.model.Lava;
 import game.model.Platform;
 import game.model.Player;
 
@@ -27,5 +28,9 @@ public class CollisionManager {
                 player.landOnPlatform(platform.getY());
             }
         }
+    }
+
+    public boolean checkLavaCollision(Player player, Lava lava) {
+        return player.getY() + player.getHeight() >= lava.getY();
     }
 }

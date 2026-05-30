@@ -1,7 +1,9 @@
-// Speichert den aktuellen Spielzustand.
-// Zum Beispiel: Spiel läuft, Spiel ist pausiert oder Game Over.
-// Wird später genutzt, um den Ablauf des Spiels zu steuern.
+// Speichert den aktuellen Zustand des Spiels.
+// Dadurch kann unterschieden werden, ob das Spiel läuft oder beendet wurde.
+// Wird genutzt, um bei Lava-Berührung Game Over anzuzeigen.
 package game;
 
-public class GameState {
+public enum GameState {
+    RUNNING,
+    GAME_OVER
 }

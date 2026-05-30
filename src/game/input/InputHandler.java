@@ -1,6 +1,6 @@
-// Speichert den aktuellen Spielzustand.
-// Zum Beispiel: Spiel läuft, Spiel ist pausiert oder Game Over.
-// Wird später genutzt, um den Ablauf des Spiels zu steuern.
+// Verarbeitet die Tastatureingaben.
+// Speichert, ob A, D, Leertaste oder R gedrückt werden.
+// Diese Werte werden vom GamePanel abgefragt, um den Spieler zu bewegen oder das Spiel neu zu starten.
 package game.input;
 
 import java.awt.event.KeyEvent;
@@ -8,54 +8,67 @@ import java.awt.event.KeyListener;
 
 public class InputHandler implements KeyListener {
 
-    private boolean leftPressed;
-    private boolean rightPressed;
-    private boolean spacePressed;
+    private boolean linksGedrueckt;
+    private boolean rechtsGedrueckt;
+    private boolean springenGedrueckt;
+    private boolean neustartGedrueckt;
 
     @Override
     public void keyPressed(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_A) {
-            leftPressed = true;
+            linksGedrueckt = true;
         }
 
         if (e.getKeyCode() == KeyEvent.VK_D) {
-            rightPressed = true;
+            rechtsGedrueckt = true;
         }
 
         if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-            spacePressed = true;
+            springenGedrueckt = true;
+        }
+
+        if (e.getKeyCode() == KeyEvent.VK_R) {
+            neustartGedrueckt = true;
         }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
         if (e.getKeyCode() == KeyEvent.VK_A) {
-            leftPressed = false;
+            linksGedrueckt = false;
         }
 
         if (e.getKeyCode() == KeyEvent.VK_D) {
-            rightPressed = false;
+            rechtsGedrueckt = false;
         }
 
         if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-            spacePressed = false;
+            springenGedrueckt = false;
+        }
+
+        if (e.getKeyCode() == KeyEvent.VK_R) {
+            neustartGedrueckt = false;
         }
     }
 
     @Override
     public void keyTyped(KeyEvent e) {
-        // Wird hier nicht benötigt
+        // Wird hier nicht benötigt.
     }
 
-    public boolean isLeftPressed() {
-        return leftPressed;
+    public boolean isLinksGedrueckt() {
+        return linksGedrueckt;
     }
 
-    public boolean isRightPressed() {
-        return rightPressed;
+    public boolean isRechtsGedrueckt() {
+        return rechtsGedrueckt;
     }
 
-    public boolean isSpacePressed() {
-        return spacePressed;
+    public boolean isSpringenGedrueckt() {
+        return springenGedrueckt;
+    }
+
+    public boolean isNeustartGedrueckt() {
+        return neustartGedrueckt;
     }
 }
