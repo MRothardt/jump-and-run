@@ -1,3 +1,6 @@
+// Beschreibt den Spieler.
+// Speichert Position, Größe und Geschwindigkeit.
+// Enthält Bewegung, Springen, Gravitation und das Zeichnen des Spielers.
 package game.model;
 
 import java.awt.Color;

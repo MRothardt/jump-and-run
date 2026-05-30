@@ -1,3 +1,6 @@
+// Beschreibt eine einzelne Plattform.
+// Speichert Position und Größe der Plattform.
+// Die Plattform kann gezeichnet und für Kollisionen abgefragt werden.
 package game.model;
 
 import java.awt.Color;

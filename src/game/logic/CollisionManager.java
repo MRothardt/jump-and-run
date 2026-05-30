@@ -1,3 +1,6 @@
+// Prüft Kollisionen zwischen Spielobjekten.
+// Aktuell wird geprüft, ob der Spieler auf einer Plattform landet.
+// Später kann hier auch die Kollision mit der Lava geprüft werden.
 package game.logic;
 
 import game.model.Platform;

@@ -1,5 +1,7 @@
 package game;
-
+// Hauptfenster des Spiels.
+// Diese Klasse erbt von JFrame.
+// Sie enthält das GamePanel und legt die Fenstereinstellungen fest.
 import javax.swing.JFrame;
 
 public class GameFrame extends JFrame {

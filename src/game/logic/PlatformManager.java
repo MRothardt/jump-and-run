@@ -1,3 +1,6 @@
+// Verwaltet alle Plattformen im Spiel.
+// Speichert die Plattformen in einer ArrayList.
+// Zeichnet alle Plattformen und stellt sie für die Kollisionsprüfung bereit.
 package game.logic;
 
 import game.model.Platform;

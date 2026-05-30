@@ -1,5 +1,7 @@
 package game;
-
+// Spielfläche des Spiels.
+// Hier werden Spieler und Plattformen gezeichnet.
+// Außerdem läuft hier der GameLoop über einen Timer.
 import game.input.InputHandler;
 import game.logic.CollisionManager;
 import game.logic.PlatformManager;
