@@ -69,7 +69,7 @@ public class Platform {
     }
 
     public boolean sollEntferntWerden() {
-        return plattformTyp == PlatformType.BRUECHIG && zerbrechenZaehler > 25;
+        return plattformTyp == PlatformType.BRUECHIG && zerbrechenZaehler > 100;
     }
 
     public void bewegeNachUnten(int distanz) {
