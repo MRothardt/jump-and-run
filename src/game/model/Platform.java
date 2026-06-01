@@ -40,14 +40,20 @@ public class Platform {
             g.setColor(new Color(100, 100, 100));
         } else if (plattformTyp == PlatformType.BRUECHIG) {
             g.setColor(new Color(120, 70, 40));
-        } else if (plattformTyp == PlatformType.KRISTALL) {
-            g.setColor(new Color(0, 180, 220));
+        } else if (plattformTyp == PlatformType.TRAMPOLIN) {
+            g.setColor(new Color(50, 190, 80));
         }
 
         g.fillRect(x, y, breite, hoehe);
 
         g.setColor(Color.BLACK);
         g.drawRect(x, y, breite, hoehe);
+
+        if (plattformTyp == PlatformType.TRAMPOLIN) {
+            g.setColor(new Color(220, 40, 40));
+            g.drawLine(x + 10, y + 3, x + breite - 10, y + 3);
+            g.drawLine(x + 10, y + hoehe - 4, x + breite - 10, y + hoehe - 4);
+        }
 
         if (plattformTyp == PlatformType.BRUECHIG && wurdeBeruehrt) {
             g.setColor(Color.BLACK);

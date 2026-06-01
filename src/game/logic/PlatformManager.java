@@ -17,14 +17,14 @@ public class PlatformManager {
         plattformen = new ArrayList<>();
 
         int[] xPositionen = {
-                150, 220, 140, 60, 20,
-                90, 210, 270, 180, 80,
-                10, 120, 240, 170, 40,
-                230, 130, 280, 190, 70
+                150, 30, 250, 70, 290,
+                10, 220, 120, 300, 40,
+                260, 80, 180, 0, 280,
+                110, 310, 60, 240, 20
         };
 
         int startY = 540;
-        int abstand = 70;
+        int abstand = 90;
 
         for (int i = 0; i < 100; i++) {
             int x = xPositionen[i % xPositionen.length];
@@ -34,8 +34,8 @@ public class PlatformManager {
 
             if (i < 6) {
                 typ = PlatformType.NORMAL;
-            } else if (i % 10 == 0) {
-                typ = PlatformType.KRISTALL;
+            } else if (i % 18 == 0) {
+                typ = PlatformType.TRAMPOLIN;
             } else if (i % 4 == 0 || i % 7 == 0) {
                 typ = PlatformType.BRUECHIG;
             } else {

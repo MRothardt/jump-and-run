@@ -5,6 +5,7 @@ package game.logic;
 
 import game.model.Lava;
 import game.model.Platform;
+import game.model.PlatformType;
 import game.model.Player;
 
 public class CollisionManager {
@@ -25,7 +26,12 @@ public class CollisionManager {
                             && spieler.getX() < plattform.getX() + plattform.getWidth();
 
             if (spielerFaellt && spielerBeruehrtPlattformVonOben && spielerIstHorizontalAufPlattform) {
-                spieler.landOnPlatform(plattform.getY());
+                if (plattform.getPlattformTyp() == PlatformType.TRAMPOLIN) {
+                    spieler.springeVonTrampolin(plattform.getY());
+                } else {
+                    spieler.landOnPlatform(plattform.getY());
+                }
+
                 plattform.beruehren();
             }
         }

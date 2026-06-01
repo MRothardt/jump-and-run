@@ -5,5 +5,5 @@ package game.model;
 public enum PlatformType {
     NORMAL,
     BRUECHIG,
-    KRISTALL
+    TRAMPOLIN
 }
