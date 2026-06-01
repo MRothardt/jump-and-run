@@ -16,16 +16,34 @@ public class PlatformManager {
     public PlatformManager() {
         plattformen = new ArrayList<>();
 
-        plattformen.add(new Platform(150, 550, PlatformType.NORMAL));
-        plattformen.add(new Platform(80, 480, PlatformType.NORMAL));
-        plattformen.add(new Platform(220, 410, PlatformType.NORMAL));
-        plattformen.add(new Platform(120, 340, PlatformType.BRUECHIG));
-        plattformen.add(new Platform(250, 270, PlatformType.NORMAL));
-        plattformen.add(new Platform(40, 200, PlatformType.KRISTALL));
-        plattformen.add(new Platform(200, 130, PlatformType.NORMAL));
-        plattformen.add(new Platform(100, 60, PlatformType.BRUECHIG));
-        plattformen.add(new Platform(240, -10, PlatformType.NORMAL));
-        plattformen.add(new Platform(60, -80, PlatformType.NORMAL));
+        int[] xPositionen = {
+                150, 220, 140, 60, 20,
+                90, 210, 270, 180, 80,
+                10, 120, 240, 170, 40,
+                230, 130, 280, 190, 70
+        };
+
+        int startY = 540;
+        int abstand = 70;
+
+        for (int i = 0; i < 100; i++) {
+            int x = xPositionen[i % xPositionen.length];
+            int y = startY - i * abstand;
+
+            PlatformType typ;
+
+            if (i < 6) {
+                typ = PlatformType.NORMAL;
+            } else if (i % 10 == 0) {
+                typ = PlatformType.KRISTALL;
+            } else if (i % 4 == 0 || i % 7 == 0) {
+                typ = PlatformType.BRUECHIG;
+            } else {
+                typ = PlatformType.NORMAL;
+            }
+
+            plattformen.add(new Platform(x, y, typ));
+        }
     }
 
     public void aktualisieren() {
