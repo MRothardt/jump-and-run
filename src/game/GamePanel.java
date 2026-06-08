@@ -6,14 +6,18 @@ package game;
 import game.input.InputHandler;
 import game.logic.CollisionManager;
 import game.logic.PlatformManager;
+import game.logic.Scoreboard;
+import game.logic.Scoreboard.ScoreEintrag;
 import game.model.Lava;
 import game.model.Player;
 
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -21,6 +25,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import javax.imageio.ImageIO;
 
 public class GamePanel extends JPanel {
@@ -37,6 +42,7 @@ public class GamePanel extends JPanel {
     private CollisionManager kollisionsManager;
     private InputHandler eingabeHandler;
     private Lava lava;
+    private Scoreboard scoreboard;
 
     private GameState spielZustand;
 
@@ -53,6 +59,7 @@ public class GamePanel extends JPanel {
         addKeyListener(eingabeHandler);
 
         kollisionsManager = new CollisionManager();
+        scoreboard = new Scoreboard();
 
         spielNeustarten();
 
@@ -90,8 +97,19 @@ public class GamePanel extends JPanel {
         lava.aktualisieren();
 
         if (kollisionsManager.checkLavaCollision(spieler, lava)) {
-            spielZustand = GameState.GAME_OVER;
+            spielBeenden();
         }
+    }
+
+    private void spielBeenden() {
+        spielZustand = GameState.GAME_OVER;
+
+        String spielerName = JOptionPane.showInputDialog(
+                this,
+                "Name für das Scoreboard:",
+                scoreboard.getLetzterSpielerName()
+        );
+        scoreboard.scoreEintragen(spielerName, punktzahl);
     }
 
     private void kameraAktualisieren() {
@@ -189,16 +207,66 @@ public class GamePanel extends JPanel {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 18));
         g.drawString("Score: " + punktzahl, 15, 25);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 14));
+        g.drawString("Best: " + scoreboard.getBesterScore(), 15, 45);
     }
 
     private void gameOverZeichnen(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        g2.setColor(new Color(0, 0, 0, 175));
+        g2.fillRoundRect(35, 145, 330, 380, 12, 12);
+        g2.setColor(Color.WHITE);
+        g2.drawRoundRect(35, 145, 330, 380, 12, 12);
+
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.BOLD, 36));
-        g.drawString("GAME OVER", 85, 250);
+        zentriertenTextZeichnen(g, "GAME OVER", 205);
 
         g.setFont(new Font("Arial", Font.PLAIN, 18));
-        g.drawString("Du bist in die Lava gefallen", 80, 290);
-        g.drawString("Score: " + punktzahl, 150, 320);
-        g.drawString("Drücke R zum Neustarten", 85, 350);
+        zentriertenTextZeichnen(g, "Du bist in die Lava gefallen", 240);
+        zentriertenTextZeichnen(g, "Score: " + punktzahl, 270);
+
+        scoreboardZeichnen(g, 320);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 18));
+        zentriertenTextZeichnen(g, "Drücke R zum Neustarten", 495);
+        g2.dispose();
+    }
+
+    private void scoreboardZeichnen(Graphics g, int startY) {
+        List<ScoreEintrag> eintraege = scoreboard.getEintraege();
+
+        g.setFont(new Font("Arial", Font.BOLD, 20));
+        zentriertenTextZeichnen(g, "Scoreboard", startY);
+
+        g.setFont(new Font("Arial", Font.PLAIN, 16));
+
+        if (eintraege.isEmpty()) {
+            zentriertenTextZeichnen(g, "Noch keine Scores", startY + 35);
+            return;
+        }
+
+        int maxAnzahl = Math.min(5, eintraege.size());
+
+        for (int i = 0; i < maxAnzahl; i++) {
+            ScoreEintrag eintrag = eintraege.get(i);
+            int y = startY + 35 + i * 25;
+
+            g.drawString((i + 1) + ".", 80, y);
+            g.drawString(eintrag.getSpielerName(), 115, y);
+            rechtsbuendigenTextZeichnen(g, String.valueOf(eintrag.getScore()), 320, y);
+        }
+    }
+
+    private void zentriertenTextZeichnen(Graphics g, String text, int y) {
+        FontMetrics metrics = g.getFontMetrics();
+        int x = (bildschirmBreite - metrics.stringWidth(text)) / 2;
+        g.drawString(text, x, y);
+    }
+
+    private void rechtsbuendigenTextZeichnen(Graphics g, String text, int rechterRand, int y) {
+        FontMetrics metrics = g.getFontMetrics();
+        g.drawString(text, rechterRand - metrics.stringWidth(text), y);
     }
 }
