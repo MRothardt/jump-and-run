@@ -137,6 +137,7 @@ public class GamePanel extends JPanel {
         punktzahl = 0;
 
         requestFocusInWindow();
+        eingabeHandler.zuruecksetzen();
     }
 
     @Override

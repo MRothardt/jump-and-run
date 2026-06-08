@@ -56,6 +56,13 @@ public class InputHandler implements KeyListener {
         // Wird hier nicht benötigt.
     }
 
+    public void zuruecksetzen() {
+        linksGedrueckt = false;
+        rechtsGedrueckt = false;
+        springenGedrueckt = false;
+        neustartGedrueckt = false;
+    }
+
     public boolean isLinksGedrueckt() {
         return linksGedrueckt;
     }
