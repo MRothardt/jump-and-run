@@ -11,4 +11,3 @@ public class Main {
         gameFrame.setVisible(true);
     }
 }
-// pp

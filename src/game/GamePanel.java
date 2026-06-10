@@ -31,7 +31,7 @@ import javax.imageio.ImageIO;
 public class GamePanel extends JPanel {
 
     private static final BufferedImage startHoehlenBild = ladeBild("cave_background.png");
-    private static final BufferedImage hoehlenKachelBild = ladeBild("cave_tile.png");
+    private static final BufferedImage hoehlenHauptBild = ladeBild("cave_main.png");
 
     private final int bildschirmBreite = 400;
     private final int bildschirmHoehe = 600;
@@ -160,7 +160,7 @@ public class GamePanel extends JPanel {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 
-        if (startHoehlenBild == null || hoehlenKachelBild == null) {
+        if (startHoehlenBild == null || hoehlenHauptBild == null) {
             g2.setColor(new Color(19, 20, 24));
             g2.fillRect(0, 0, bildschirmBreite, bildschirmHoehe);
             g2.dispose();
@@ -171,16 +171,16 @@ public class GamePanel extends JPanel {
         g2.fillRect(0, 0, bildschirmBreite, bildschirmHoehe);
 
         int skalierteStartBildHoehe = startHoehlenBild.getHeight() * bildschirmBreite / startHoehlenBild.getWidth();
-        int skalierteKachelHoehe = hoehlenKachelBild.getHeight() * bildschirmBreite / hoehlenKachelBild.getWidth();
+        int skalierteHauptBildHoehe = hoehlenHauptBild.getHeight() * bildschirmBreite / hoehlenHauptBild.getWidth();
         int startBildY = bildschirmHoehe - skalierteStartBildHoehe + punktzahl;
 
-        int kachelY = startBildY - skalierteKachelHoehe;
-        while (kachelY > -skalierteKachelHoehe) {
-            kachelY -= skalierteKachelHoehe;
+        int hauptBildY = startBildY - skalierteHauptBildHoehe;
+        while (hauptBildY > -skalierteHauptBildHoehe) {
+            hauptBildY -= skalierteHauptBildHoehe;
         }
 
-        for (int y = kachelY; y < bildschirmHoehe; y += skalierteKachelHoehe) {
-            g2.drawImage(hoehlenKachelBild, 0, y, bildschirmBreite, skalierteKachelHoehe, null);
+        for (int y = hauptBildY; y < bildschirmHoehe; y += skalierteHauptBildHoehe) {
+            g2.drawImage(hoehlenHauptBild, 0, y, bildschirmBreite, skalierteHauptBildHoehe, null);
         }
 
         if (startBildY < bildschirmHoehe) {
