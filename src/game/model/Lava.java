@@ -3,12 +3,18 @@
 // Wenn der Spieler zu lange stehen bleibt, steigt sie langsam nach oben.
 package game.model;
 
-import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.GradientPaint;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import javax.imageio.ImageIO;
 
 public class Lava {
+
+    private static final BufferedImage lavaOberflaecheBild = ladeBild("lava_surface.png");
 
     private int x;
     private double y;
@@ -44,40 +50,55 @@ public class Lava {
 
     public void draw(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
+        // Nearest-neighbor erhaelt den bewusst pixeligen Look des Lava-PNGs.
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+
         int lavaY = (int) y;
         int lavaHoehe = bildschirmHoehe - lavaY;
 
-        GradientPaint lavaVerlauf = new GradientPaint(
-                x, lavaY, new Color(255, 210, 54),
-                x, bildschirmHoehe, new Color(128, 18, 0)
+        if (lavaOberflaecheBild == null) {
+            lavaFallbackZeichnen(g2, lavaY, lavaHoehe);
+            g2.dispose();
+            return;
+        }
+
+        // Die Lava ist absichtlich ein statisches grosses PNG.
+        // Das Bild enthaelt die Oberflaeche und die komplette Tiefe darunter,
+        // damit kein sichtbarer Bruch zwischen Surface und Fill entsteht.
+        int lavaBildY = lavaY;
+        int lavaBildHoehe = Math.max(lavaOberflaecheBild.getHeight(), bildschirmHoehe - lavaBildY);
+
+        g2.drawImage(
+                lavaOberflaecheBild,
+                x,
+                lavaBildY,
+                breite,
+                lavaBildHoehe,
+                null
         );
-        g2.setPaint(lavaVerlauf);
-        g2.fillRect(x, lavaY, breite, lavaHoehe);
-
-        g2.setColor(new Color(255, 238, 98));
-        for (int i = -20; i < breite + 30; i += 34) {
-            int wellenHoehe = (i / 34) % 2 == 0 ? 4 : 9;
-            g2.fillRect(x + i, lavaY + wellenHoehe, 24, 4);
-        }
-
-        g2.setColor(new Color(255, 118, 12));
-        for (int i = 0; i < breite; i += 46) {
-            g2.fillRect(x + i + 8, lavaY + 18, 28, 5);
-            g2.fillRect(x + i + 18, lavaY + 31, 16, 4);
-        }
-
-        g2.setColor(new Color(92, 12, 0));
-        for (int i = 0; i < breite; i += 58) {
-            g2.fillRect(x + i + 4, lavaY + 43, 34, 6);
-            g2.fillRect(x + i + 27, lavaY + 55, 18, 5);
-        }
-
-        g2.setColor(new Color(255, 245, 137));
-        g2.fillRect(x, lavaY, breite, 3);
-        g2.setColor(new Color(180, 32, 0));
-        g2.fillRect(x, lavaY + 7, breite, 3);
 
         g2.dispose();
+    }
+
+    private void lavaFallbackZeichnen(Graphics2D g2, int lavaY, int lavaHoehe) {
+        g2.setColor(new java.awt.Color(145, 34, 9));
+        g2.fillRect(x, lavaY, breite, lavaHoehe);
+        g2.setColor(new java.awt.Color(48, 13, 8));
+        g2.fillRect(x, lavaY, breite, 4);
+    }
+
+    private static BufferedImage ladeBild(String dateiname) {
+        URL bildUrl = Lava.class.getResource("/game/assets/" + dateiname);
+
+        try {
+            if (bildUrl != null) {
+                return ImageIO.read(bildUrl);
+            }
+
+            return ImageIO.read(new File("src/game/assets/" + dateiname));
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     public int getY() {

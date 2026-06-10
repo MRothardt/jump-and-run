@@ -71,25 +71,17 @@ public class Player {
         x += geschwindigkeitX;
         y += geschwindigkeitY;
 
-        if (x + breite < 0) {
-            x = bildschirmBreite;
+        if (x < 0) {
+            x = 0;
         }
 
-        if (x > bildschirmBreite) {
-            x = -breite;
+        if (x + breite > bildschirmBreite) {
+            x = bildschirmBreite - breite;
         }
     }
 
     public void draw(Graphics g) {
         zeichneMinenarbeiterMitRichtung(g, x, y);
-
-        if (x < 0) {
-            zeichneMinenarbeiterMitRichtung(g, x + bildschirmBreite, y);
-        }
-
-        if (x + breite > bildschirmBreite) {
-            zeichneMinenarbeiterMitRichtung(g, x - bildschirmBreite, y);
-        }
     }
 
     private void zeichneMinenarbeiterMitRichtung(Graphics g, int zeichneX, int zeichneY) {

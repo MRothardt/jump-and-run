@@ -11,7 +11,7 @@ import java.util.List;
 
 public class Scoreboard {
 
-    private static final int MAX_EINTRAEGE = 10;
+    private static final int MAX_EINTRAEGE = 100;
     private static final String STANDARD_NAME = "Spieler";
 
     private final Path scoreboardDatei;
@@ -59,6 +59,18 @@ public class Scoreboard {
 
     public List<ScoreEintrag> getEintraege() {
         return new ArrayList<>(eintraege);
+    }
+
+    public int getRang(String spielerName) {
+        String bereinigterName = namenBereinigen(spielerName);
+
+        for (int i = 0; i < eintraege.size(); i++) {
+            if (eintraege.get(i).getSpielerName().equalsIgnoreCase(bereinigterName)) {
+                return i + 1;
+            }
+        }
+
+        return -1;
     }
 
     private void scoreboardLaden() {

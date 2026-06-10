@@ -12,6 +12,7 @@ public class InputHandler implements KeyListener {
     private boolean rechtsGedrueckt;
     private boolean springenGedrueckt;
     private boolean neustartGedrueckt;
+    private boolean menuGedrueckt;
 
     @Override
     public void keyPressed(KeyEvent e) {
@@ -29,6 +30,10 @@ public class InputHandler implements KeyListener {
 
         if (e.getKeyCode() == KeyEvent.VK_R) {
             neustartGedrueckt = true;
+        }
+
+        if (e.getKeyCode() == KeyEvent.VK_M) {
+            menuGedrueckt = true;
         }
     }
 
@@ -49,6 +54,10 @@ public class InputHandler implements KeyListener {
         if (e.getKeyCode() == KeyEvent.VK_R) {
             neustartGedrueckt = false;
         }
+
+        if (e.getKeyCode() == KeyEvent.VK_M) {
+            menuGedrueckt = false;
+        }
     }
 
     @Override
@@ -61,6 +70,7 @@ public class InputHandler implements KeyListener {
         rechtsGedrueckt = false;
         springenGedrueckt = false;
         neustartGedrueckt = false;
+        menuGedrueckt = false;
     }
 
     public boolean isLinksGedrueckt() {
@@ -77,5 +87,9 @@ public class InputHandler implements KeyListener {
 
     public boolean isNeustartGedrueckt() {
         return neustartGedrueckt;
+    }
+
+    public boolean isMenuGedrueckt() {
+        return menuGedrueckt;
     }
 }
