@@ -6,7 +6,6 @@ public class Main {
 
     public static void main(String[] args) {
         System.out.println("Spiel startet...");
-        System.out.println("Tom kommt...");
         GameFrame gameFrame = new GameFrame();
         gameFrame.setVisible(true);
     }
