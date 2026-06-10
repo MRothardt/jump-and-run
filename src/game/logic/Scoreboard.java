@@ -32,18 +32,17 @@ public class Scoreboard {
     public void scoreEintragen(String spielerName, int score) {
         String bereinigterName = namenBereinigen(spielerName);
         int bereinigterScore = Math.max(score, 0);
-        ScoreEintrag vorhandenerEintrag = eintragFinden(bereinigterName);
 
-        if (vorhandenerEintrag == null) {
-            eintraege.add(new ScoreEintrag(bereinigterName, bereinigterScore));
-        } else if (bereinigterScore > vorhandenerEintrag.getScore()) {
-            vorhandenerEintrag.setScore(bereinigterScore);
-            vorhandenerEintrag.setSpielerName(bereinigterName);
-        }
-
+        scoreAktualisieren(bereinigterName, bereinigterScore);
         letzterSpielerName = bereinigterName;
         eintraegeSortierenUndBegrenzen();
         scoreboardSpeichern();
+    }
+
+    public String spielerNameSetzen(String spielerName) {
+        letzterSpielerName = namenBereinigen(spielerName);
+        scoreboardSpeichern();
+        return letzterSpielerName;
     }
 
     public int getBesterScore() {
@@ -74,7 +73,7 @@ public class Scoreboard {
                 if (teile.length == 2 && teile[0].equals("last")) {
                     letzterSpielerName = namenBereinigen(teile[1]);
                 } else if (teile.length == 3 && teile[0].equals("score")) {
-                    eintraege.add(new ScoreEintrag(namenBereinigen(teile[2]), Integer.parseInt(teile[1])));
+                    scoreAktualisieren(namenBereinigen(teile[2]), Integer.parseInt(teile[1]));
                 }
             }
         } catch (IOException | NumberFormatException e) {
@@ -83,6 +82,17 @@ public class Scoreboard {
         }
 
         eintraegeSortierenUndBegrenzen();
+    }
+
+    private void scoreAktualisieren(String spielerName, int score) {
+        ScoreEintrag vorhandenerEintrag = eintragFinden(spielerName);
+
+        if (vorhandenerEintrag == null) {
+            eintraege.add(new ScoreEintrag(spielerName, Math.max(score, 0)));
+        } else if (score > vorhandenerEintrag.getScore()) {
+            vorhandenerEintrag.setScore(Math.max(score, 0));
+            vorhandenerEintrag.setSpielerName(spielerName);
+        }
     }
 
     private void scoreboardSpeichern() {

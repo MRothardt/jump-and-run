@@ -23,6 +23,7 @@ public class PlatformManager {
     private final int startY = 540;
     private final int abstand = 90;
     private final int untereEntfernungsGrenze = 700;
+    private final int ausweichPlattformHoehenVersatz = 25;
 
     public PlatformManager() {
         plattformen = new ArrayList<>();
@@ -73,7 +74,32 @@ public class PlatformManager {
         }
 
         plattformen.add(new Platform(x, y, typ));
+
+        if (typ == PlatformType.BRUECHIG) {
+            plattformen.add(new Platform(ausweichPlattformX(x), y + ausweichPlattformHoehenVersatz, PlatformType.NORMAL));
+        }
+
         naechsterPlattformIndex++;
+    }
+
+    private int ausweichPlattformX(int holzPlattformX) {
+        int x;
+
+        if (holzPlattformX < 150) {
+            x = holzPlattformX + 170;
+        } else {
+            x = holzPlattformX - 170;
+        }
+
+        if (x < 20) {
+            return 20;
+        }
+
+        if (x > 280) {
+            return 280;
+        }
+
+        return x;
     }
 
     private int oberstePlattformY() {

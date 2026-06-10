@@ -43,6 +43,7 @@ public class GamePanel extends JPanel {
     private InputHandler eingabeHandler;
     private Lava lava;
     private Scoreboard scoreboard;
+    private String spielerName;
 
     private GameState spielZustand;
 
@@ -60,6 +61,7 @@ public class GamePanel extends JPanel {
 
         kollisionsManager = new CollisionManager();
         scoreboard = new Scoreboard();
+        spielerName = spielerNameAbfragen();
 
         spielNeustarten();
 
@@ -103,13 +105,17 @@ public class GamePanel extends JPanel {
 
     private void spielBeenden() {
         spielZustand = GameState.GAME_OVER;
+        scoreboard.scoreEintragen(spielerName, punktzahl);
+    }
 
-        String spielerName = JOptionPane.showInputDialog(
+    private String spielerNameAbfragen() {
+        String eingegebenerName = JOptionPane.showInputDialog(
                 this,
                 "Name für das Scoreboard:",
                 scoreboard.getLetzterSpielerName()
         );
-        scoreboard.scoreEintragen(spielerName, punktzahl);
+
+        return scoreboard.spielerNameSetzen(eingegebenerName);
     }
 
     private void kameraAktualisieren() {

@@ -75,11 +75,24 @@ public class Platform {
     }
 
     private void holzRisseZeichnen(Graphics2D g2) {
-        g2.setColor(new Color(9, 6, 4));
-        g2.drawLine(x + 28, y + 1, x + 38, y + hoehe + 2);
-        g2.drawLine(x + 38, y + 8, x + 45, y + 3);
-        g2.drawLine(x + 68, y + 1, x + 80, y + hoehe + 2);
-        g2.drawLine(x + 80, y + 10, x + 88, y + 6);
+        g2.setColor(new Color(4, 2, 1));
+        g2.drawLine(x + 22, y, x + 35, y + hoehe + 4);
+        g2.drawLine(x + 23, y, x + 36, y + hoehe + 4);
+        g2.drawLine(x + 35, y + 8, x + 47, y + 2);
+        g2.drawLine(x + 55, y + 1, x + 50, y + hoehe + 4);
+        g2.drawLine(x + 72, y, x + 86, y + hoehe + 4);
+        g2.drawLine(x + 73, y, x + 87, y + hoehe + 4);
+        g2.drawLine(x + 84, y + 10, x + 95, y + 5);
+
+        g2.setColor(new Color(214, 139, 54));
+        g2.drawLine(x + 20, y + 2, x + 27, y + 6);
+        g2.drawLine(x + 39, y + 12, x + 47, y + 8);
+        g2.drawLine(x + 68, y + 3, x + 76, y + 7);
+        g2.drawLine(x + 88, y + 14, x + 96, y + 10);
+
+        g2.setColor(new Color(255, 185, 76));
+        g2.fillRect(x + 31, y + 5, 3, 2);
+        g2.fillRect(x + 78, y + 9, 3, 2);
     }
 
     private static BufferedImage ladeBild(String dateiname) {
