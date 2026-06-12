@@ -1,6 +1,6 @@
 // Beschreibt die Lava im Spiel.
 // Die Lava bleibt grundsätzlich im unteren Bildschirmbereich.
-// Wenn der Spieler zu lange stehen bleibt, steigt sie langsam nach oben.
+// Sie steigt dauerhaft langsam nach oben, damit der Spieler in Bewegung bleiben muss.
 package game.model;
 
 import java.awt.Graphics;
@@ -15,6 +15,10 @@ import javax.imageio.ImageIO;
 public class Lava {
 
     private static final BufferedImage lavaOberflaecheBild = ladeBild("lava_surface.png");
+    private static final double START_GESCHWINDIGKEIT = 0.20;
+    private static final double MAX_GESCHWINDIGKEIT = 0.35;
+    private static final double GESCHWINDIGKEIT_PRO_STUFE = 0.03;
+    private static final int SCORE_PRO_STUFE = 5000;
 
     private int x;
     private double y;
@@ -30,11 +34,17 @@ public class Lava {
 
         this.y = bildschirmHoehe - 40;
 
-        // Sehr langsam, damit die Lava nur Druck macht, wenn man zu lange stehen bleibt.
-        this.lavaGeschwindigkeit = 0.08;
+        // Moderat schnell, damit die Lava Druck macht, der Spieler aber noch fluechten kann.
+        this.lavaGeschwindigkeit = START_GESCHWINDIGKEIT;
     }
 
-    public void aktualisieren() {
+    public void aktualisieren(int punktzahl) {
+        int stufe = punktzahl / SCORE_PRO_STUFE;
+        lavaGeschwindigkeit = Math.min(
+                MAX_GESCHWINDIGKEIT,
+                START_GESCHWINDIGKEIT + stufe * GESCHWINDIGKEIT_PRO_STUFE
+        );
+
         y -= lavaGeschwindigkeit;
     }
 

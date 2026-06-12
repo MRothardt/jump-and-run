@@ -67,7 +67,6 @@ public class GamePanel extends JPanel {
     private int punktzahl;
     private int lavaStossCooldown;
     private int steinCooldown;
-    private int lavaAfkZaehler;
     private Random zufall;
 
     public GamePanel(Scoreboard scoreboard, String spielerName, Runnable menuAnzeigen) {
@@ -164,19 +163,12 @@ public class GamePanel extends JPanel {
     private void lavaAktualisieren(int hoehenFortschritt) {
         if (hoehenFortschritt > 0) {
             // Bei echtem Fortschritt kann der Spieler vor der Lava fliehen.
-            // Die Lava wird nach unten gedrueckt und steigt nicht dauerhaft mit.
+            // Die Lava wird nach unten gedrueckt, steigt aber trotzdem pro Tick ein kleines Stueck.
             lava.nachUntenDruecken(hoehenFortschritt);
-            lavaAfkZaehler = 0;
-            return;
         }
 
-        lavaAfkZaehler++;
-
-        // Nur wenn der Spieler laenger keinen Hoehenfortschritt macht,
-        // steigt die Lava langsam nach oben und kann ihn einholen.
-        if (lavaAfkZaehler > 150) {
-            lava.aktualisieren();
-        }
+        // Die Lava steigt dauerhaft leicht nach oben und wird mit steigendem Score schneller.
+        lava.aktualisieren(punktzahl);
     }
 
     private void lavaStoesseAktualisieren() {
@@ -253,7 +245,6 @@ public class GamePanel extends JPanel {
         fallendeSteine = new ArrayList<>();
         spielZustand = GameState.RUNNING;
         punktzahl = 0;
-        lavaAfkZaehler = 0;
         // Erster Lava-Stoss kommt erst mit Abstand nach dem Erreichen der Score-Grenze.
         lavaStossCooldown = 520;
         // Der erste Deckenstein kommt erst nach kurzer Spielzeit.
