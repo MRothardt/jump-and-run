@@ -8,6 +8,7 @@ import game.logic.CollisionManager;
 import game.logic.PlatformManager;
 import game.logic.Scoreboard;
 import game.logic.Scoreboard.ScoreEintrag;
+import game.model.FallingRock;
 import game.model.Lava;
 import game.model.LavaBurst;
 import game.model.Player;
@@ -52,6 +53,7 @@ public class GamePanel extends JPanel {
     private InputHandler eingabeHandler;
     private Lava lava;
     private ArrayList<LavaBurst> lavaStoesse;
+    private ArrayList<FallingRock> fallendeSteine;
     private Scoreboard scoreboard;
     private String spielerName;
     private Runnable menuAnzeigen;
@@ -64,6 +66,8 @@ public class GamePanel extends JPanel {
 
     private int punktzahl;
     private int lavaStossCooldown;
+    private int steinCooldown;
+    private int lavaAfkZaehler;
     private Random zufall;
 
     public GamePanel(Scoreboard scoreboard, String spielerName, Runnable menuAnzeigen) {
@@ -117,14 +121,15 @@ public class GamePanel extends JPanel {
 
         plattformManager.aktualisieren();
 
-        kameraAktualisieren();
+        int hoehenFortschritt = kameraAktualisieren();
 
-        // Die Lava steigt langsam. Wenn der Spieler nicht weiterkommt,
-        // holt die Lava ihn irgendwann ein.
-        lava.aktualisieren();
+        lavaAktualisieren(hoehenFortschritt);
         lavaStoesseAktualisieren();
+        fallendeSteineAktualisieren();
 
-        if (kollisionsManager.checkLavaCollision(spieler, lava) || lavaStossTrifftSpieler()) {
+        if (kollisionsManager.checkLavaCollision(spieler, lava)
+                || lavaStossTrifftSpieler()
+                || fallenderSteinTrifftSpieler()) {
             spielBeenden();
         }
     }
@@ -138,33 +143,50 @@ public class GamePanel extends JPanel {
         gameOverButtonsSichtbarSetzen(true);
     }
 
-    private void kameraAktualisieren() {
+    private int kameraAktualisieren() {
         if (spieler.getY() < kameraGrenze) {
             int verschiebung = kameraGrenze - spieler.getY();
 
             spieler.bewegeNachUnten(verschiebung);
             plattformManager.bewegeAllePlattformenNachUnten(verschiebung);
-
-            // Wenn der Spieler wirklich Fortschritt macht,
-            // wird die Lava wieder nach unten gedrückt.
-            // Dadurch bleibt sie meistens im unteren Bereich,
-            // steigt aber trotzdem, wenn man zu lange stehen bleibt.
-            lava.nachUntenDruecken(verschiebung);
-            lavaStoesseAnLavaBinden();
+            lavaStoesseNachUntenBewegen(verschiebung);
+            // Fallende Steine werden hier bewusst NICHT bewegt.
+            // Sie fallen mit fester Bildschirmgeschwindigkeit und sollen nicht
+            // schneller/langsamer werden, nur weil der Spieler schnell hochspringt.
 
             punktzahl += verschiebung;
+            return verschiebung;
+        }
+
+        return 0;
+    }
+
+    private void lavaAktualisieren(int hoehenFortschritt) {
+        if (hoehenFortschritt > 0) {
+            // Bei echtem Fortschritt kann der Spieler vor der Lava fliehen.
+            // Die Lava wird nach unten gedrueckt und steigt nicht dauerhaft mit.
+            lava.nachUntenDruecken(hoehenFortschritt);
+            lavaAfkZaehler = 0;
+            return;
+        }
+
+        lavaAfkZaehler++;
+
+        // Nur wenn der Spieler laenger keinen Hoehenfortschritt macht,
+        // steigt die Lava langsam nach oben und kann ihn einholen.
+        if (lavaAfkZaehler > 150) {
+            lava.aktualisieren();
         }
     }
 
     private void lavaStoesseAktualisieren() {
         for (LavaBurst lavaStoss : lavaStoesse) {
             lavaStoss.aktualisieren();
-            lavaStoss.setBasisY(lava.getY());
         }
 
         lavaStoesse.removeIf(LavaBurst::istAbgelaufen);
 
-        if (punktzahl < 0) {
+        if (punktzahl < 20000) {
             return;
         }
 
@@ -179,9 +201,27 @@ public class GamePanel extends JPanel {
         }
     }
 
-    private void lavaStoesseAnLavaBinden() {
+    private void lavaStoesseNachUntenBewegen(int distanz) {
         for (LavaBurst lavaStoss : lavaStoesse) {
-            lavaStoss.setBasisY(lava.getY());
+            lavaStoss.bewegeNachUnten(distanz);
+        }
+    }
+
+    private void fallendeSteineAktualisieren() {
+        for (FallingRock stein : fallendeSteine) {
+            stein.aktualisieren();
+        }
+
+        fallendeSteine.removeIf(FallingRock::istEntfernt);
+
+        steinCooldown--;
+
+        if (steinCooldown <= 0) {
+            int x = 25 + zufall.nextInt(bildschirmBreite - 73);
+            fallendeSteine.add(new FallingRock(x));
+            // Neue Steine fallen nicht dauernd, sondern mit Abstand,
+            // damit die Warnung sichtbar bleibt und Ausweichen moeglich ist.
+            steinCooldown = 240 + zufall.nextInt(190);
         }
     }
 
@@ -195,15 +235,29 @@ public class GamePanel extends JPanel {
         return false;
     }
 
+    private boolean fallenderSteinTrifftSpieler() {
+        for (FallingRock stein : fallendeSteine) {
+            if (stein.trifft(spieler)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void spielNeustarten() {
         spieler = new Player(180, 500);
         plattformManager = new PlatformManager();
         lava = new Lava(bildschirmBreite, bildschirmHoehe);
         lavaStoesse = new ArrayList<>();
+        fallendeSteine = new ArrayList<>();
         spielZustand = GameState.RUNNING;
         punktzahl = 0;
-        // Erster Lava-Stoss kommt erst mit Abstand nach dem Erreichen der 40000 Punkte.
+        lavaAfkZaehler = 0;
+        // Erster Lava-Stoss kommt erst mit Abstand nach dem Erreichen der Score-Grenze.
         lavaStossCooldown = 520;
+        // Der erste Deckenstein kommt erst nach kurzer Spielzeit.
+        steinCooldown = 240;
 
         gameOverButtonsSichtbarSetzen(false);
         requestFocusInWindow();
@@ -317,6 +371,9 @@ public class GamePanel extends JPanel {
         // Lava-Stoesse werden vor der Lava gezeichnet, damit ihr Ursprung
         // optisch hinter der Lava-Oberflaeche liegt.
         lavaStoesseZeichnen(g);
+        // Fallende Steine werden ebenfalls vor der Lava gezeichnet.
+        // Dadurch verschwinden sie optisch hinter der Lava-Ebene, wenn sie unten ankommen.
+        fallendeSteineZeichnen(g);
         lava.draw(g);
         lavaStossWarnungenZeichnen(g);
         spieler.draw(g);
@@ -336,7 +393,13 @@ public class GamePanel extends JPanel {
 
     private void lavaStossWarnungenZeichnen(Graphics g) {
         for (LavaBurst lavaStoss : lavaStoesse) {
-            lavaStoss.warnungZeichnen(g);
+            lavaStoss.warnungZeichnen(g, lava.getY());
+        }
+    }
+
+    private void fallendeSteineZeichnen(Graphics g) {
+        for (FallingRock stein : fallendeSteine) {
+            stein.draw(g);
         }
     }
 

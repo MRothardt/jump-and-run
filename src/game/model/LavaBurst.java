@@ -31,13 +31,12 @@ public class LavaBurst {
         this.alter = 0;
         // Vor dem Schuss sieht der Spieler an der Lava-Oberflaeche,
         // wo der Burst gleich herauskommt.
-        this.warnDauer = 75;
-        // Der eigentliche Schuss soll schneller nach oben gehen als vorher.
-        this.schussDauer = 10;
-        // Der Schuss soll bis etwa zur Bildschirmmitte kommen.
-        // Bei 600px Hoehe bedeutet das ungefaehr 300px ueber der Lava-Oberflaeche.
-        this.lebensdauer = 125 + warnDauer;
-        this.maximaleHoehe = 330;
+        this.warnDauer = 105;
+        // Der Schuss geht langsamer nach oben, damit man noch reagieren kann.
+        this.schussDauer = 34;
+        // Der Burst bleibt an seiner Spawn-Stelle und spritzt dafuer hoeher.
+        this.lebensdauer = 145 + warnDauer;
+        this.maximaleHoehe = 580;
         // Der Burst startet optisch hinter der Lava Surface und schiesst dann heraus.
         this.startUnterDerLava = 42;
     }
@@ -46,8 +45,17 @@ public class LavaBurst {
         alter++;
     }
 
-    public void setBasisY(int basisY) {
-        this.basisY = basisY;
+    public void bewegeNachUnten(int distanz) {
+        if (istInWarnphase()) {
+            // Waehrend der Voranimation bleibt die Warnung auf dem Bildschirm beim Spieler.
+            // Der eigentliche Weltpunkt wird erst fest, wenn der echte Burst auftaucht.
+            return;
+        }
+
+        // Sobald der echte Burst auftaucht, bleibt er fest in der Spielwelt.
+        // Beim Hochspringen des Spielers wandert er dann so schnell nach unten,
+        // wie der Spieler durch den Kamera-Scroll nach oben kommt.
+        basisY += distanz;
     }
 
     public void draw(Graphics g) {
@@ -65,7 +73,7 @@ public class LavaBurst {
         g2.dispose();
     }
 
-    public void warnungZeichnen(Graphics g) {
+    public void warnungZeichnen(Graphics g, int lavaY) {
         if (!istInWarnphase()) {
             return;
         }
@@ -73,17 +81,30 @@ public class LavaBurst {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 
-        int warnFortschritt = alter % 18;
-        int warnBreite = 22 + warnFortschritt / 2;
+        int warnFortschritt = alter % 30;
+        int warnBreite = 30 + warnFortschritt / 2;
+        int vorBurstHoehe = 24 + warnFortschritt;
         int mitteX = x + breite / 2;
-        int warnY = basisY + 3;
+        int warnY = lavaY + 3;
 
         // Das Warnsignal liegt auf der Lava-Oberflaeche und zeigt die Austrittsstelle.
+        // Die Warnung folgt der aktuellen Lava-Oberflaeche,
+        // waehrend der eigentliche Burst an seiner festen Weltposition bleibt.
         // Es ist bewusst einfach gehalten, damit es lesbar bleibt und nicht wie ein Hindernis wirkt.
         g2.setColor(new Color(255, 190, 54, 160));
-        g2.fillRect(mitteX - warnBreite / 2, warnY, warnBreite, 3);
+        g2.fillRect(mitteX - warnBreite / 2, warnY, warnBreite, 4);
         g2.setColor(new Color(150, 28, 8, 190));
-        g2.fillRect(mitteX - warnBreite / 2 - 2, warnY + 4, warnBreite + 4, 3);
+        g2.fillRect(mitteX - warnBreite / 2 - 4, warnY + 5, warnBreite + 8, 4);
+
+        // Kleiner Vor-Burst als deutliche Warnung. Er sieht gefaehrlich aus,
+        // ist aber in der Warnphase noch nicht toedlich.
+        g2.setColor(new Color(255, 190, 58, 215));
+        g2.fillRect(mitteX - 6, warnY - vorBurstHoehe, 12, vorBurstHoehe);
+        g2.setColor(new Color(183, 39, 8, 205));
+        g2.fillRect(mitteX - 11, warnY - vorBurstHoehe / 2, 5, vorBurstHoehe / 2);
+        g2.fillRect(mitteX + 6, warnY - vorBurstHoehe / 2 - 5, 6, vorBurstHoehe / 2 + 5);
+        g2.setColor(new Color(255, 225, 92, 190));
+        g2.fillRect(mitteX - 3, warnY - vorBurstHoehe - 8, 6, 8);
         g2.setColor(new Color(255, 89, 15, 135));
         g2.fillRect(mitteX - 4, warnY - 5, 8, 4);
 
@@ -144,6 +165,11 @@ public class LavaBurst {
 
     private boolean istInWarnphase() {
         return alter < warnDauer;
+    }
+
+    private boolean istImAufbau() {
+        int schussAlter = alter - warnDauer;
+        return schussAlter > 0 && schussAlter < schussDauer;
     }
 
     private int getUnten() {
