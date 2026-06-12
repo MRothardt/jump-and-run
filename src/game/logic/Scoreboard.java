@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Scoreboard {
 
@@ -16,6 +18,9 @@ public class Scoreboard {
 
     private final Path scoreboardDatei;
     private final ArrayList<ScoreEintrag> eintraege;
+    private final ArrayList<Runnable> aenderungsListener;
+    private final ExecutorService firebaseExecutor;
+    private final FirebaseScoreboardClient firebaseClient;
     private String letzterSpielerName;
 
     public Scoreboard() {
@@ -25,11 +30,19 @@ public class Scoreboard {
     Scoreboard(Path scoreboardDatei) {
         this.scoreboardDatei = scoreboardDatei;
         this.eintraege = new ArrayList<>();
+        this.aenderungsListener = new ArrayList<>();
+        this.firebaseClient = new FirebaseScoreboardClient();
+        this.firebaseExecutor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "scoreboard-firebase");
+            thread.setDaemon(true);
+            return thread;
+        });
         this.letzterSpielerName = STANDARD_NAME;
         scoreboardLaden();
+        firebaseLadenAsync();
     }
 
-    public void scoreEintragen(String spielerName, int score) {
+    public synchronized void scoreEintragen(String spielerName, int score) {
         String bereinigterName = namenBereinigen(spielerName);
         int bereinigterScore = Math.max(score, 0);
 
@@ -37,15 +50,18 @@ public class Scoreboard {
         letzterSpielerName = bereinigterName;
         eintraegeSortierenUndBegrenzen();
         scoreboardSpeichern();
+        firebaseScoreSpeichernAsync(bereinigterName, bereinigterScore);
+        aenderungMelden();
     }
 
-    public String spielerNameSetzen(String spielerName) {
+    public synchronized String spielerNameSetzen(String spielerName) {
         letzterSpielerName = namenBereinigen(spielerName);
         scoreboardSpeichern();
+        aenderungMelden();
         return letzterSpielerName;
     }
 
-    public int getBesterScore() {
+    public synchronized int getBesterScore() {
         if (eintraege.isEmpty()) {
             return 0;
         }
@@ -53,15 +69,15 @@ public class Scoreboard {
         return eintraege.get(0).getScore();
     }
 
-    public String getLetzterSpielerName() {
+    public synchronized String getLetzterSpielerName() {
         return letzterSpielerName;
     }
 
-    public List<ScoreEintrag> getEintraege() {
+    public synchronized List<ScoreEintrag> getEintraege() {
         return new ArrayList<>(eintraege);
     }
 
-    public int getRang(String spielerName) {
+    public synchronized int getRang(String spielerName) {
         String bereinigterName = namenBereinigen(spielerName);
 
         for (int i = 0; i < eintraege.size(); i++) {
@@ -71,6 +87,66 @@ public class Scoreboard {
         }
 
         return -1;
+    }
+
+    public synchronized void aenderungsListenerHinzufuegen(Runnable listener) {
+        if (listener != null) {
+            aenderungsListener.add(listener);
+        }
+    }
+
+    public synchronized void aenderungsListenerEntfernen(Runnable listener) {
+        aenderungsListener.remove(listener);
+    }
+
+    private void firebaseLadenAsync() {
+        firebaseExecutor.submit(() -> {
+            try {
+                List<ScoreEintrag> firebaseEintraege = firebaseClient.eintraegeLaden();
+
+                if (!firebaseEintraege.isEmpty()) {
+                    synchronized (this) {
+                        for (ScoreEintrag eintrag : firebaseEintraege) {
+                            scoreAktualisieren(namenBereinigen(eintrag.getSpielerName()), eintrag.getScore());
+                        }
+
+                        eintraegeSortierenUndBegrenzen();
+                        scoreboardSpeichern();
+                    }
+
+                    aenderungMelden();
+                }
+            } catch (IOException e) {
+                System.err.println("Firebase-Scoreboard konnte nicht geladen werden: " + e.getMessage());
+            }
+        });
+    }
+
+    private void firebaseScoreSpeichernAsync(String spielerName, int score) {
+        firebaseExecutor.submit(() -> {
+            try {
+                ScoreEintrag firebaseEintrag = firebaseClient.eintragLaden(spielerName);
+                int besterScore = score;
+
+                if (firebaseEintrag != null && firebaseEintrag.getScore() > besterScore) {
+                    besterScore = firebaseEintrag.getScore();
+                }
+
+                firebaseClient.eintragSpeichern(spielerName, besterScore);
+
+                if (besterScore > score) {
+                    synchronized (this) {
+                        scoreAktualisieren(spielerName, besterScore);
+                        eintraegeSortierenUndBegrenzen();
+                        scoreboardSpeichern();
+                    }
+
+                    aenderungMelden();
+                }
+            } catch (IOException e) {
+                System.err.println("Firebase-Score konnte nicht gespeichert werden: " + e.getMessage());
+            }
+        });
     }
 
     private void scoreboardLaden() {
@@ -94,6 +170,14 @@ public class Scoreboard {
         }
 
         eintraegeSortierenUndBegrenzen();
+    }
+
+    private synchronized void aenderungMelden() {
+        ArrayList<Runnable> listenerKopie = new ArrayList<>(aenderungsListener);
+
+        for (Runnable listener : listenerKopie) {
+            listener.run();
+        }
     }
 
     private void scoreAktualisieren(String spielerName, int score) {
@@ -178,7 +262,7 @@ public class Scoreboard {
         private String spielerName;
         private int score;
 
-        private ScoreEintrag(String spielerName, int score) {
+        ScoreEintrag(String spielerName, int score) {
             this.spielerName = spielerName;
             this.score = score;
         }

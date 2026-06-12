@@ -14,6 +14,8 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 // Importiert JPanel als Basis fuer die Menue-Oberflaeche.
 import javax.swing.JPanel;
+// Importiert SwingUtilities, damit Firebase-Updates sicher neu zeichnen.
+import javax.swing.SwingUtilities;
 // Importiert JTextField fuer die Namenseingabe.
 import javax.swing.JTextField;
 // Importiert DocumentEvent, damit Textaenderungen im Namensfeld erkannt werden.
@@ -74,6 +76,8 @@ public class MenuPanel extends JPanel {
 
     // Speichert die gemeinsame Scoreboard-Instanz.
     private final Scoreboard scoreboard;
+    // Merkt sich den Listener fuer Scoreboard-Aenderungen.
+    private final Runnable scoreboardAenderungsListener;
     // Speichert die Funktion, mit der das Spiel aus dem Menue gestartet wird.
     private final Consumer<String> spielStarten;
     // Speichert das Eingabefeld fuer den Spielernamen.
@@ -84,6 +88,8 @@ public class MenuPanel extends JPanel {
     private final JButton scoreboardButton;
     // Speichert den ersten sichtbaren Scoreboard-Eintrag fuer Scrollen.
     private int scoreboardScrollIndex;
+    // Sammelt feine Trackpad-Scrollbewegungen, bis eine ganze Zeile erreicht ist.
+    private double scoreboardScrollRest;
 
     // Merkt sich, ob das Scoreboard im Menue eingeblendet ist.
     private boolean scoreboardAnzeigen;
@@ -94,6 +100,9 @@ public class MenuPanel extends JPanel {
         this.scoreboard = scoreboard;
         // Speichert die uebergebene Start-Funktion.
         this.spielStarten = spielStarten;
+        // Zeichnet das Menue neu, wenn Scores aus Firebase nachgeladen wurden.
+        this.scoreboardAenderungsListener = () -> SwingUtilities.invokeLater(this::repaint);
+        this.scoreboard.aenderungsListenerHinzufuegen(scoreboardAenderungsListener);
 
         // Setzt die feste Groesse des Menues.
         setPreferredSize(new Dimension(bildschirmBreite, bildschirmHoehe));
@@ -145,6 +154,8 @@ public class MenuPanel extends JPanel {
             scoreboardAnzeigen = !scoreboardAnzeigen;
             // Setzt die Scrollposition beim Oeffnen wieder nach oben.
             scoreboardScrollIndex = 0;
+            // Verwirft alte Trackpad-Restbewegung beim erneuten Oeffnen.
+            scoreboardScrollRest = 0;
             // Zeichnet das Menue neu, damit die Aenderung sichtbar wird.
             repaint();
         });
@@ -159,7 +170,9 @@ public class MenuPanel extends JPanel {
                 // Scrollt nur, wenn das Scoreboard sichtbar ist und die Maus ueber der Tafel steht.
                 if (scoreboardAnzeigen && istMausImScoreboard(e.getX(), e.getY())) {
                     // Verschiebt die Scoreboard-Liste nach oben oder unten.
-                    scoreboardScrollen(e.getWheelRotation());
+                    scoreboardScrollen(e.getPreciseWheelRotation());
+                    // Verhindert, dass das Scroll-Event noch anderweitig verarbeitet wird.
+                    e.consume();
                 }
             }
         });
@@ -190,6 +203,12 @@ public class MenuPanel extends JPanel {
 
         // Setzt direkt am Anfang das passende Spielen-Schild.
         buttonStatusAktualisieren();
+    }
+
+    @Override
+    public void removeNotify() {
+        scoreboard.aenderungsListenerEntfernen(scoreboardAenderungsListener);
+        super.removeNotify();
     }
 
     // Positioniert alle Swing-Elemente im Menue.
@@ -375,15 +394,32 @@ public class MenuPanel extends JPanel {
 
 
     // Verschiebt die Scoreboard-Anzeige per Mausrad.
-    private void scoreboardScrollen(int richtung) {
+    private void scoreboardScrollen(double richtung) {
         // Holt die aktuelle Anzahl gespeicherter Scoreboard-Eintraege.
         int anzahlEintraege = scoreboard.getEintraege().size();
-        // Wandelt grosse Mausradwerte in einzelne Scrollschritte um.
-        int scrollSchritt = Integer.compare(richtung, 0);
+        // Merkt sich die bisherige Scrollposition.
+        int alterScrollIndex = scoreboardScrollIndex;
+
+        // Sammelt feine Trackpad-Bewegungen, damit die Zeilen nicht zittern.
+        scoreboardScrollRest += richtung;
+
+        // Wandelt die gesammelte Bewegung in ganze Zeilenschritte um.
+        int scrollSchritt = (int) scoreboardScrollRest;
+
+        // Wartet, bis mindestens eine ganze Zeile erreicht ist.
+        if (scrollSchritt == 0) {
+            return;
+        }
+
+        // Behaelt nur den noch nicht verbrauchten Scroll-Rest.
+        scoreboardScrollRest -= scrollSchritt;
         // Verschiebt die Scrollposition innerhalb der erlaubten Grenzen.
         scoreboardScrollIndex = scrollIndexBegrenzen(scoreboardScrollIndex + scrollSchritt, anzahlEintraege);
-        // Zeichnet das Menue neu, damit die neue Scrollposition sichtbar wird.
-        repaint();
+
+        // Zeichnet nur neu, wenn sich die sichtbaren Zeilen wirklich geaendert haben.
+        if (scoreboardScrollIndex != alterScrollIndex) {
+            repaint();
+        }
     }
 
     // Prueft, ob die Maus ueber der Scoreboard-Tafel steht.

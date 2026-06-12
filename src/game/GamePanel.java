@@ -19,6 +19,7 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import java.awt.event.ActionEvent;
 import java.awt.Color;
@@ -55,6 +56,7 @@ public class GamePanel extends JPanel {
     private ArrayList<LavaBurst> lavaStoesse;
     private ArrayList<FallingRock> fallendeSteine;
     private Scoreboard scoreboard;
+    private Runnable scoreboardAenderungsListener;
     private String spielerName;
     private Runnable menuAnzeigen;
     private JButton neuVersuchenButton;
@@ -83,6 +85,8 @@ public class GamePanel extends JPanel {
         this.scoreboard = scoreboard;
         this.spielerName = spielerName;
         this.menuAnzeigen = menuAnzeigen;
+        scoreboardAenderungsListener = () -> SwingUtilities.invokeLater(this::repaint);
+        this.scoreboard.aenderungsListenerHinzufuegen(scoreboardAenderungsListener);
 
         gameOverButtonsErstellen();
         hotkeysRegistrieren();
@@ -95,6 +99,12 @@ public class GamePanel extends JPanel {
         });
 
         timer.start();
+    }
+
+    @Override
+    public void removeNotify() {
+        scoreboard.aenderungsListenerEntfernen(scoreboardAenderungsListener);
+        super.removeNotify();
     }
 
     private void spielAktualisieren() {
