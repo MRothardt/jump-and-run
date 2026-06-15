@@ -48,8 +48,9 @@ public class Player {
         this.schautNachRechts = true;
     }
 
-    public void update(boolean linksGedrueckt, boolean rechtsGedrueckt, boolean springenGedrueckt) {
+    public boolean update(boolean linksGedrueckt, boolean rechtsGedrueckt, boolean springenGedrueckt) {
         geschwindigkeitX = 0;
+        boolean istGesprungen = false;
 
         if (linksGedrueckt) {
             geschwindigkeitX = -laufGeschwindigkeit;
@@ -64,6 +65,7 @@ public class Player {
         if (springenGedrueckt && stehtAufBoden) {
             geschwindigkeitY = sprungKraft;
             stehtAufBoden = false;
+            istGesprungen = true;
         }
 
         geschwindigkeitY += gravitation;
@@ -78,6 +80,8 @@ public class Player {
         if (x + breite > bildschirmBreite) {
             x = bildschirmBreite - breite;
         }
+
+        return istGesprungen;
     }
 
     public void draw(Graphics g) {

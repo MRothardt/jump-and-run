@@ -21,6 +21,12 @@ import javax.swing.JPanel;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
+import javax.sound.sampled.LineEvent;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
 import java.awt.event.ActionEvent;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -43,6 +49,9 @@ public class GamePanel extends JPanel {
     private static final BufferedImage startHoehlenBild = ladeBild("cave_background.png");
     private static final BufferedImage hoehlenHauptBild = ladeBild("cave_main.png");
     private static final BufferedImage gameOverTafelBild = ladeBild("game_over_panel.png");
+    private static final String TODES_SOUND_DATEI = "death_sound.wav";
+    private static final String SPRUNG_SOUND_DATEI = "jump_sound.wav";
+    private static final String TRAMPOLIN_SOUND_DATEI = "trampoline_sound.wav";
 
     private final int bildschirmBreite = 400;
     private final int bildschirmHoehe = 600;
@@ -61,6 +70,7 @@ public class GamePanel extends JPanel {
     private Runnable menuAnzeigen;
     private JButton neuVersuchenButton;
     private JButton menuButton;
+    private boolean todesSoundWurdeAbgespielt;
 
     private GameState spielZustand;
 
@@ -120,13 +130,21 @@ public class GamePanel extends JPanel {
             return;
         }
 
-        spieler.update(
+        boolean spielerIstGesprungen = spieler.update(
                 eingabeHandler.isLinksGedrueckt(),
                 eingabeHandler.isRechtsGedrueckt(),
                 eingabeHandler.isSpringenGedrueckt()
         );
 
-        kollisionsManager.checkPlatformCollision(spieler, plattformManager);
+        if (spielerIstGesprungen) {
+            soundAbspielen(SPRUNG_SOUND_DATEI, "Sprung-Sound konnte nicht abgespielt werden.");
+        }
+
+        boolean trampolinWurdeAusgeloest = kollisionsManager.checkPlatformCollision(spieler, plattformManager);
+
+        if (trampolinWurdeAusgeloest) {
+            soundAbspielen(TRAMPOLIN_SOUND_DATEI, "Trampolin-Sound konnte nicht abgespielt werden.");
+        }
 
         plattformManager.aktualisieren();
 
@@ -144,12 +162,57 @@ public class GamePanel extends JPanel {
     }
 
     private void spielBeenden() {
+        if (spielZustand == GameState.GAME_OVER) {
+            return;
+        }
+
         // Setzt den Spielzustand auf Game Over, damit die Game-Over-Oberflaeche gezeichnet wird.
         spielZustand = GameState.GAME_OVER;
+        todesSoundAbspielen();
         // Traegt den aktuellen Score fuer den im Menue gewaehlten Spielernamen ein.
         scoreboard.scoreEintragen(spielerName, punktzahl);
         // Blendet die Game-Over-Buttons ein, weil sie nur nach dem Tod anklickbar sein sollen.
         gameOverButtonsSichtbarSetzen(true);
+    }
+
+    private void todesSoundAbspielen() {
+        if (todesSoundWurdeAbgespielt) {
+            return;
+        }
+
+        todesSoundWurdeAbgespielt = true;
+        soundAbspielen(TODES_SOUND_DATEI, "Todes-Sound konnte nicht abgespielt werden.");
+    }
+
+    private void soundAbspielen(String dateiname, String fehlerMeldung) {
+        File soundDatei = soundDateiFinden(dateiname);
+
+        if (soundDatei == null || !soundDatei.exists()) {
+            return;
+        }
+
+        try (AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundDatei)) {
+            Clip clip = AudioSystem.getClip();
+            clip.open(audioStream);
+            clip.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP) {
+                    clip.close();
+                }
+            });
+            clip.start();
+        } catch (IOException | LineUnavailableException | UnsupportedAudioFileException e) {
+            System.out.println(fehlerMeldung);
+        }
+    }
+
+    private static File soundDateiFinden(String dateiname) {
+        URL soundUrl = GamePanel.class.getResource("/game/assets/" + dateiname);
+
+        if (soundUrl != null) {
+            return new File(soundUrl.getPath());
+        }
+
+        return new File("src/game/assets/" + dateiname);
     }
 
     private int kameraAktualisieren() {
@@ -254,6 +317,7 @@ public class GamePanel extends JPanel {
         lavaStoesse = new ArrayList<>();
         fallendeSteine = new ArrayList<>();
         spielZustand = GameState.RUNNING;
+        todesSoundWurdeAbgespielt = false;
         punktzahl = 0;
         // Erster Lava-Stoss kommt erst mit Abstand nach dem Erreichen der Score-Grenze.
         lavaStossCooldown = 520;
