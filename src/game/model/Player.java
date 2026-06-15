@@ -84,20 +84,37 @@ public class Player {
         zeichneMinenarbeiterMitRichtung(g, x, y);
     }
 
+    public void drawCrushed(Graphics g, double fortschritt) {
+        double geklemmterFortschritt = Math.max(0.0, Math.min(1.0, fortschritt));
+        int gequetschteHoehe = Math.max(17, (int) Math.round(minerSpriteHoehe * (1.0 - 0.62 * geklemmterFortschritt)));
+        int gequetschteBreite = minerSpriteBreite + (int) Math.round(16 * geklemmterFortschritt);
+        int zielX = x - 3 - (gequetschteBreite - minerSpriteBreite) / 2;
+        int zielY = y + hoehe - gequetschteHoehe;
+
+        zeichneMinenarbeiterSkaliertMitRichtung(g, zielX, zielY, gequetschteBreite, gequetschteHoehe);
+    }
+
     private void zeichneMinenarbeiterMitRichtung(Graphics g, int zeichneX, int zeichneY) {
+        int zielX = zeichneX - 3;
+        int zielY = zeichneY + hoehe - minerSpriteHoehe;
+
+        zeichneMinenarbeiterSkaliertMitRichtung(g, zielX, zielY, minerSpriteBreite, minerSpriteHoehe);
+    }
+
+    private void zeichneMinenarbeiterSkaliertMitRichtung(Graphics g, int zielX, int zielY, int zielBreite, int zielHoehe) {
         if (schautNachRechts) {
-            zeichneMinenarbeiterBild(g, zeichneX, zeichneY);
+            zeichneMinenarbeiterBild(g, zielX, zielY, zielBreite, zielHoehe);
             return;
         }
 
         Graphics2D g2 = (Graphics2D) g.create();
-        g2.translate(zeichneX + breite, zeichneY);
+        g2.translate(zielX + zielBreite, zielY);
         g2.scale(-1, 1);
-        zeichneMinenarbeiterBild(g2, 0, 0);
+        zeichneMinenarbeiterBild(g2, 0, 0, zielBreite, zielHoehe);
         g2.dispose();
     }
 
-    private void zeichneMinenarbeiterBild(Graphics g, int zeichneX, int zeichneY) {
+    private void zeichneMinenarbeiterBild(Graphics g, int zielX, int zielY, int zielBreite, int zielHoehe) {
         if (minerBild == null) {
             return;
         }
@@ -105,15 +122,12 @@ public class Player {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 
-        int zielX = zeichneX - 3;
-        int zielY = zeichneY + hoehe - minerSpriteHoehe;
-
         g2.drawImage(
                 minerBild,
                 zielX,
                 zielY,
-                zielX + minerSpriteBreite,
-                zielY + minerSpriteHoehe,
+                zielX + zielBreite,
+                zielY + zielHoehe,
                 minerQuelleX,
                 minerQuelleY,
                 minerQuelleX + minerQuelleBreite,
