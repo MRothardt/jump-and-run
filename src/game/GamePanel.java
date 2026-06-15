@@ -43,6 +43,8 @@ public class GamePanel extends JPanel {
     private static final BufferedImage startHoehlenBild = ladeBild("cave_background.png");
     private static final BufferedImage hoehlenHauptBild = ladeBild("cave_main.png");
     private static final BufferedImage gameOverTafelBild = ladeBild("game_over_panel.png");
+    private static final int LAVA_TOD_ANIMATION_DAUER = 26;
+    private static final int STEIN_TOD_ANIMATION_DAUER = 18;
 
     private final int bildschirmBreite = 400;
     private final int bildschirmHoehe = 600;
@@ -61,6 +63,9 @@ public class GamePanel extends JPanel {
     private Runnable menuAnzeigen;
     private JButton neuVersuchenButton;
     private JButton menuButton;
+    private TodesUrsache todesUrsache;
+    private FallingRock todesStein;
+    private int sterbeAnimationZaehler;
 
     private GameState spielZustand;
 
@@ -70,6 +75,11 @@ public class GamePanel extends JPanel {
     private int lavaStossCooldown;
     private int steinCooldown;
     private Random zufall;
+
+    private enum TodesUrsache {
+        LAVA,
+        FALLENDER_STEIN
+    }
 
     public GamePanel(Scoreboard scoreboard, String spielerName, Runnable menuAnzeigen) {
         setPreferredSize(new Dimension(bildschirmBreite, bildschirmHoehe));
@@ -108,6 +118,11 @@ public class GamePanel extends JPanel {
     }
 
     private void spielAktualisieren() {
+        if (spielZustand == GameState.DYING) {
+            sterbeAnimationAktualisieren();
+            return;
+        }
+
         if (spielZustand == GameState.GAME_OVER) {
             if (eingabeHandler.isNeustartGedrueckt()) {
                 spielNeustarten();
@@ -136,20 +151,61 @@ public class GamePanel extends JPanel {
         lavaStoesseAktualisieren();
         fallendeSteineAktualisieren();
 
-        if (kollisionsManager.checkLavaCollision(spieler, lava)
-                || lavaStossTrifftSpieler()
-                || fallenderSteinTrifftSpieler()) {
-            spielBeenden();
+        if (kollisionsManager.checkLavaCollision(spieler, lava) || lavaStossTrifftSpieler()) {
+            sterbeAnimationStarten(TodesUrsache.LAVA, null);
+            return;
+        }
+
+        FallingRock treffenderStein = treffendenFallendenSteinFinden();
+
+        if (treffenderStein != null) {
+            sterbeAnimationStarten(TodesUrsache.FALLENDER_STEIN, treffenderStein);
         }
     }
 
     private void spielBeenden() {
+        if (spielZustand == GameState.GAME_OVER) {
+            return;
+        }
+
         // Setzt den Spielzustand auf Game Over, damit die Game-Over-Oberflaeche gezeichnet wird.
         spielZustand = GameState.GAME_OVER;
         // Traegt den aktuellen Score fuer den im Menue gewaehlten Spielernamen ein.
         scoreboard.scoreEintragen(spielerName, punktzahl);
         // Blendet die Game-Over-Buttons ein, weil sie nur nach dem Tod anklickbar sein sollen.
         gameOverButtonsSichtbarSetzen(true);
+    }
+
+    private void sterbeAnimationStarten(TodesUrsache ursache, FallingRock stein) {
+        if (spielZustand != GameState.RUNNING) {
+            return;
+        }
+
+        spielZustand = GameState.DYING;
+        todesUrsache = ursache;
+        todesStein = stein;
+        sterbeAnimationZaehler = 0;
+        eingabeHandler.zuruecksetzen();
+    }
+
+    private void sterbeAnimationAktualisieren() {
+        sterbeAnimationZaehler++;
+
+        if (todesUrsache == TodesUrsache.LAVA) {
+            spieler.bewegeNachUnten(2);
+        }
+
+        if (sterbeAnimationZaehler >= sterbeAnimationDauer()) {
+            spielBeenden();
+        }
+    }
+
+    private int sterbeAnimationDauer() {
+        if (todesUrsache == TodesUrsache.FALLENDER_STEIN) {
+            return STEIN_TOD_ANIMATION_DAUER;
+        }
+
+        return LAVA_TOD_ANIMATION_DAUER;
     }
 
     private int kameraAktualisieren() {
@@ -237,14 +293,14 @@ public class GamePanel extends JPanel {
         return false;
     }
 
-    private boolean fallenderSteinTrifftSpieler() {
+    private FallingRock treffendenFallendenSteinFinden() {
         for (FallingRock stein : fallendeSteine) {
             if (stein.trifft(spieler)) {
-                return true;
+                return stein;
             }
         }
 
-        return false;
+        return null;
     }
 
     private void spielNeustarten() {
@@ -254,6 +310,9 @@ public class GamePanel extends JPanel {
         lavaStoesse = new ArrayList<>();
         fallendeSteine = new ArrayList<>();
         spielZustand = GameState.RUNNING;
+        todesUrsache = null;
+        todesStein = null;
+        sterbeAnimationZaehler = 0;
         punktzahl = 0;
         // Erster Lava-Stoss kommt erst mit Abstand nach dem Erreichen der Score-Grenze.
         lavaStossCooldown = 520;
@@ -375,9 +434,18 @@ public class GamePanel extends JPanel {
         // Fallende Steine werden ebenfalls vor der Lava gezeichnet.
         // Dadurch verschwinden sie optisch hinter der Lava-Ebene, wenn sie unten ankommen.
         fallendeSteineZeichnen(g);
+        if (istLavaTodAnimation()) {
+            spieler.draw(g);
+        }
         lava.draw(g);
         lavaStossWarnungenZeichnen(g);
-        spieler.draw(g);
+        if (!istLavaTodAnimation()) {
+            spielerZeichnen(g);
+        }
+
+        if (spielZustand == GameState.DYING) {
+            sterbeAnimationZeichnen(g);
+        }
 
         scoreZeichnen(g);
 
@@ -402,6 +470,89 @@ public class GamePanel extends JPanel {
         for (FallingRock stein : fallendeSteine) {
             stein.draw(g);
         }
+    }
+
+    private void spielerZeichnen(Graphics g) {
+        if (spielZustand == GameState.DYING && todesUrsache == TodesUrsache.FALLENDER_STEIN) {
+            spieler.drawCrushed(g, sterbeFortschritt());
+            return;
+        }
+
+        spieler.draw(g);
+    }
+
+    private boolean istLavaTodAnimation() {
+        return spielZustand == GameState.DYING && todesUrsache == TodesUrsache.LAVA;
+    }
+
+    private void sterbeAnimationZeichnen(Graphics g) {
+        if (todesUrsache == TodesUrsache.FALLENDER_STEIN) {
+            steinTodAnimationZeichnen(g);
+            return;
+        }
+
+        lavaTodAnimationZeichnen(g);
+    }
+
+    private double sterbeFortschritt() {
+        double linearerFortschritt = Math.min(1.0, sterbeAnimationZaehler / (double) sterbeAnimationDauer());
+        return 1.0 - Math.pow(1.0 - linearerFortschritt, 2.0);
+    }
+
+    private void lavaTodAnimationZeichnen(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        double fortschritt = sterbeFortschritt();
+        int lavaY = lava.getY();
+        int mitteX = spieler.getX() + spieler.getWidth() / 2;
+        int spritzerHoehe = 12 + (int) (22 * (1.0 - fortschritt));
+
+        for (int i = 0; i < 7; i++) {
+            int x = mitteX - 30 + i * 10;
+            int y = lavaY - spritzerHoehe + (i % 2) * 7 + (int) (fortschritt * 16);
+            int groesse = 4 + (i % 3);
+
+            g2.setColor(new Color(255, 198, 57, 190));
+            g2.fillRect(x, y, groesse, groesse);
+            g2.setColor(new Color(189, 45, 10, 185));
+            g2.fillRect(x - 2, y + groesse, groesse + 4, 3);
+        }
+
+        int overlayY = Math.max(0, lavaY - 18);
+        int overlayAlpha = Math.min(120, 25 + (int) (fortschritt * 95));
+        g2.setColor(new Color(255, 82, 14, overlayAlpha));
+        g2.fillRect(0, overlayY, bildschirmBreite, bildschirmHoehe - overlayY);
+        g2.dispose();
+    }
+
+    private void steinTodAnimationZeichnen(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+        double fortschritt = sterbeFortschritt();
+        int mitteX = spieler.getX() + spieler.getWidth() / 2;
+        int bodenY = spieler.getY() + spieler.getHeight();
+        int staubAlpha = Math.max(0, 180 - (int) (fortschritt * 180));
+
+        if (todesStein != null) {
+            todesStein.draw(g2);
+        }
+
+        g2.setColor(new Color(136, 112, 79, staubAlpha));
+
+        for (int i = 0; i < 9; i++) {
+            int richtung = i - 4;
+            int x = mitteX + richtung * (6 + (int) (fortschritt * 14));
+            int y = bodenY - 6 - Math.abs(richtung) * 2 - (int) (fortschritt * 10);
+            g2.fillRect(x, y, 9, 4);
+        }
+
+        if (fortschritt < 0.42) {
+            int alpha = Math.max(0, 210 - (int) (fortschritt * 500));
+            g2.setColor(new Color(255, 223, 125, alpha));
+            g2.drawLine(mitteX - 32, bodenY - 38, mitteX - 12, bodenY - 18);
+            g2.drawLine(mitteX + 32, bodenY - 38, mitteX + 12, bodenY - 18);
+            g2.drawLine(mitteX, bodenY - 52, mitteX, bodenY - 24);
+        }
+
+        g2.dispose();
     }
 
     private void hintergrundZeichnen(Graphics g) {
