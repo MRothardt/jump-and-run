@@ -10,10 +10,16 @@ import game.logic.Scoreboard.ScoreEintrag;
 import javax.imageio.ImageIO;
 // Importiert ImageIcon, damit PNG-Dateien auf Buttons angezeigt werden koennen.
 import javax.swing.ImageIcon;
+// Importiert AbstractAction fuer Menue-Hotkeys.
+import javax.swing.AbstractAction;
 // Importiert JButton fuer klickbare Menue-Schilder.
 import javax.swing.JButton;
+// Importiert JComponent fuer globale Menue-Hotkeys.
+import javax.swing.JComponent;
 // Importiert JPanel als Basis fuer die Menue-Oberflaeche.
 import javax.swing.JPanel;
+// Importiert KeyStroke fuer H- und Escape-Tasten im Menue.
+import javax.swing.KeyStroke;
 // Importiert SwingUtilities, damit Firebase-Updates sicher neu zeichnen.
 import javax.swing.SwingUtilities;
 // Importiert JTextField fuer die Namenseingabe.
@@ -86,6 +92,8 @@ public class MenuPanel extends JPanel {
     private final JButton spielenButton;
     // Speichert den Scoreboard-Button.
     private final JButton scoreboardButton;
+    // Speichert den Anleitung-Button.
+    private final JButton anleitungButton;
     // Speichert den ersten sichtbaren Scoreboard-Eintrag fuer Scrollen.
     private int scoreboardScrollIndex;
     // Sammelt feine Trackpad-Scrollbewegungen, bis eine ganze Zeile erreicht ist.
@@ -93,6 +101,8 @@ public class MenuPanel extends JPanel {
 
     // Merkt sich, ob das Scoreboard im Menue eingeblendet ist.
     private boolean scoreboardAnzeigen;
+    // Merkt sich, ob die Spielanleitung im Menue eingeblendet ist.
+    private boolean anleitungAnzeigen;
 
     // Erstellt das Menue mit Scoreboard, Start-Funktion und vorausgefuelltem Namen.
     public MenuPanel(Scoreboard scoreboard, Consumer<String> spielStarten, String vorausgefuellterName) {
@@ -152,6 +162,8 @@ public class MenuPanel extends JPanel {
         scoreboardButton.addActionListener(e -> {
             // Schaltet die Scoreboard-Anzeige ein oder aus.
             scoreboardAnzeigen = !scoreboardAnzeigen;
+            // Schaltet die Anleitung aus, damit nicht zwei Tafeln uebereinander liegen.
+            anleitungAnzeigen = false;
             // Setzt die Scrollposition beim Oeffnen wieder nach oben.
             scoreboardScrollIndex = 0;
             // Verwirft alte Trackpad-Restbewegung beim erneuten Oeffnen.
@@ -162,13 +174,20 @@ public class MenuPanel extends JPanel {
         // Fuegt den Scoreboard-Button dem Menue hinzu.
         add(scoreboardButton);
 
+        // Erstellt den Anleitung-Button als beschriftetes Holzschild.
+        anleitungButton = textButtonErstellen("ANLEITUNG");
+        // Reagiert auf Klicks auf den Anleitung-Button.
+        anleitungButton.addActionListener(e -> anleitungUmschalten());
+        // Fuegt den Anleitung-Button dem Menue hinzu.
+        add(anleitungButton);
+
         // Registriert das Mausrad fuer das Scrollen im Scoreboard.
         addMouseWheelListener(new MouseWheelListener() {
             // Reagiert auf jede Mausrad-Bewegung.
             @Override
             public void mouseWheelMoved(MouseWheelEvent e) {
                 // Scrollt nur, wenn das Scoreboard sichtbar ist und die Maus ueber der Tafel steht.
-                if (scoreboardAnzeigen && istMausImScoreboard(e.getX(), e.getY())) {
+                if (scoreboardAnzeigen && !anleitungAnzeigen && istMausImScoreboard(e.getX(), e.getY())) {
                     // Verschiebt die Scoreboard-Liste nach oben oder unten.
                     scoreboardScrollen(e.getPreciseWheelRotation());
                     // Verhindert, dass das Scroll-Event noch anderweitig verarbeitet wird.
@@ -203,6 +222,8 @@ public class MenuPanel extends JPanel {
 
         // Setzt direkt am Anfang das passende Spielen-Schild.
         buttonStatusAktualisieren();
+        // Registriert H und Escape fuer die Anleitung im Menue.
+        hotkeysRegistrieren();
     }
 
     @Override
@@ -228,6 +249,8 @@ public class MenuPanel extends JPanel {
         spielenButton.setBounds(x, 438, breite, 42);
         // Platziert den Scoreboard-Button unter dem Spielen-Button.
         scoreboardButton.setBounds(x, 492, breite, 42);
+        // Platziert den Anleitung-Button unter dem Scoreboard-Button.
+        anleitungButton.setBounds(x + 25, 540, breite - 50, 32);
     }
 
     // Zeichnet den Hintergrund und die PNG-Oberflaechen.
@@ -250,6 +273,12 @@ public class MenuPanel extends JPanel {
         if (scoreboardAnzeigen) {
             // Zeichnet die Scoreboard-Tafel und die Eintraege.
             scoreboardZeichnen(g2);
+        }
+
+        // Prueft, ob die Anleitung angezeigt werden soll.
+        if (anleitungAnzeigen) {
+            // Zeichnet die Spielanleitung mit Tastenbelegung.
+            anleitungZeichnen(g2);
         }
 
         // Gibt die Graphics2D-Kopie wieder frei.
@@ -279,6 +308,64 @@ public class MenuPanel extends JPanel {
         button.setOpaque(false);
         // Gibt den fertig konfigurierten Button zurueck.
         return button;
+    }
+
+    // Erstellt einen transparenten Textbutton, falls fuer ein Schild kein PNG existiert.
+    private JButton textButtonErstellen(String text) {
+        // Erstellt einen neuen Button mit Text.
+        JButton button = new JButton(text);
+        // Setzt die Schrift passend zum restlichen Menue.
+        button.setFont(new Font(Font.MONOSPACED, Font.BOLD, 17));
+        // Setzt eine helle Textfarbe.
+        button.setForeground(new Color(246, 218, 152));
+        // Entfernt den normalen Swing-Hintergrund.
+        button.setContentAreaFilled(false);
+        // Entfernt den Fokus-Rahmen.
+        button.setFocusPainted(false);
+        // Zeichnet eine einfache dunkle Umrandung als Holzschild-Ersatz.
+        button.setBorder(javax.swing.BorderFactory.createLineBorder(new Color(98, 61, 31), 2));
+        // Macht den Button durchsichtig.
+        button.setOpaque(false);
+        // Gibt den fertig konfigurierten Button zurueck.
+        return button;
+    }
+
+    // Registriert Tastenkombinationen fuer die Anleitung.
+    private void hotkeysRegistrieren() {
+        // H schaltet die Anleitung im Menue ein oder aus.
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("H"), "anleitung");
+        // Verknuepft H mit dem Umschalten der Anleitung.
+        getActionMap().put("anleitung", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                anleitungUmschalten();
+            }
+        });
+
+        // Escape schliesst eine geoeffnete Anleitung.
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "anleitungSchliessen");
+        // Verknuepft Escape mit dem Schliessen der Anleitung.
+        getActionMap().put("anleitungSchliessen", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (anleitungAnzeigen) {
+                    anleitungAnzeigen = false;
+                    repaint();
+                }
+            }
+        });
+    }
+
+    // Schaltet die Anleitung an oder aus.
+    private void anleitungUmschalten() {
+        // Wechselt den Anzeigezustand.
+        anleitungAnzeigen = !anleitungAnzeigen;
+        // Blendet das Scoreboard aus, wenn die Anleitung geoeffnet wird.
+        if (anleitungAnzeigen) {
+            scoreboardAnzeigen = false;
+        }
+        // Zeichnet das Menue neu.
+        repaint();
     }
 
     // Aktualisiert das Spielen-Schild je nach Namenseingabe.
@@ -390,6 +477,49 @@ public class MenuPanel extends JPanel {
             // Zeichnet den Score rechtsbuendig.
             rechtsbuendigenTextZeichnen(g2, String.valueOf(eintrag.getScore()), 320, y);
         }
+    }
+
+    // Zeichnet die Spielanleitung und die aktuelle Tastenbelegung.
+    private void anleitungZeichnen(Graphics2D g2) {
+        // Zeichnet eine dunkle Tafel als gut lesbaren Hintergrund.
+        g2.setColor(new Color(16, 13, 11, 225));
+        g2.fillRoundRect(35, 70, 330, 345, 12, 12);
+        // Zeichnet den warmen Rand der Tafel.
+        g2.setColor(new Color(132, 82, 39));
+        g2.drawRoundRect(35, 70, 330, 345, 12, 12);
+        g2.drawRoundRect(39, 74, 322, 337, 8, 8);
+
+        // Zeichnet die Ueberschrift.
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 24));
+        g2.setColor(new Color(246, 218, 152));
+        zentriertenTextZeichnen(g2, "Anleitung", 108);
+
+        // Zeichnet den kurzen Spielablauf.
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        g2.setColor(new Color(232, 205, 151));
+        g2.drawString("Spring von Plattform zu Plattform.", 62, 144);
+        g2.drawString("Weiche Lava, Feuerstößen und", 62, 166);
+        g2.drawString("fallenden Steinen aus.", 62, 188);
+
+        // Zeichnet die Tastenbelegung.
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 15));
+        g2.setColor(new Color(255, 230, 166));
+        g2.drawString("Tasten:", 62, 224);
+        tastenZeileZeichnen(g2, "A", "nach links laufen", 62, 250);
+        tastenZeileZeichnen(g2, "D", "nach rechts laufen", 62, 274);
+        tastenZeileZeichnen(g2, "LEER", "springen", 62, 298);
+        tastenZeileZeichnen(g2, "R", "Neustart nach Tod", 62, 322);
+        tastenZeileZeichnen(g2, "M", "Menü nach Tod", 62, 346);
+        tastenZeileZeichnen(g2, "H / ESC", "Anleitung", 62, 370);
+    }
+
+    // Zeichnet eine einzelne Tastenbelegungs-Zeile.
+    private void tastenZeileZeichnen(Graphics2D g2, String taste, String beschreibung, int x, int y) {
+        // Zeichnet die Taste hell und die Beschreibung etwas weicher.
+        g2.setColor(new Color(255, 232, 164));
+        g2.drawString(taste, x, y);
+        g2.setColor(new Color(220, 196, 142));
+        g2.drawString(beschreibung, x + 92, y);
     }
 
 

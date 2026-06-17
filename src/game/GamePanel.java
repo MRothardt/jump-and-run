@@ -45,7 +45,8 @@ public class GamePanel extends JPanel {
     private static final BufferedImage gameOverTafelBild = ladeBild("game_over_panel.png");
     private static final int LAVA_TOD_ANIMATION_DAUER = 26;
     private static final int STEIN_TOD_ANIMATION_DAUER = 18;
-    private static final double HINTERGRUND_SCROLL_GLAETTUNG = 0.22;
+    private static final int LAVA_STOSS_START_SCORE = 5000;
+    private static final int ERSTER_LAVA_STOSS_COOLDOWN = 90;
 
     private final int bildschirmBreite = 400;
     private final int bildschirmHoehe = 600;
@@ -67,13 +68,14 @@ public class GamePanel extends JPanel {
     private TodesUrsache todesUrsache;
     private FallingRock todesStein;
     private int sterbeAnimationZaehler;
+    private boolean anleitungAnzeigen;
 
     private GameState spielZustand;
 
     private Timer timer;
 
     private int punktzahl;
-    private double hintergrundScroll;
+    private int hintergrundScroll;
     private int lavaStossCooldown;
     private int steinCooldown;
     private Random zufall;
@@ -125,6 +127,10 @@ public class GamePanel extends JPanel {
             return;
         }
 
+        if (anleitungAnzeigen) {
+            return;
+        }
+
         if (spielZustand == GameState.GAME_OVER) {
             if (eingabeHandler.isNeustartGedrueckt()) {
                 spielNeustarten();
@@ -152,7 +158,6 @@ public class GamePanel extends JPanel {
         lavaAktualisieren(hoehenFortschritt);
         lavaStoesseAktualisieren();
         fallendeSteineAktualisieren();
-        hintergrundScrollAktualisieren();
 
         if (kollisionsManager.checkLavaCollision(spieler, lava) || lavaStossTrifftSpieler()) {
             sterbeAnimationStarten(TodesUrsache.LAVA, null);
@@ -221,6 +226,7 @@ public class GamePanel extends JPanel {
             fallendeSteineNachUntenBewegen(verschiebung);
 
             punktzahl += verschiebung;
+            hintergrundScroll += verschiebung;
             return verschiebung;
         }
 
@@ -245,7 +251,7 @@ public class GamePanel extends JPanel {
 
         lavaStoesse.removeIf(LavaBurst::istAbgelaufen);
 
-        if (punktzahl < 20000) {
+        if (punktzahl < LAVA_STOSS_START_SCORE) {
             return;
         }
 
@@ -256,7 +262,7 @@ public class GamePanel extends JPanel {
             lavaStoesse.add(new LavaBurst(x, lava.getY()));
             // Nach einem Lava-Stoss kommt bewusst eine laengere Pause.
             // Dadurch bleibt der Effekt gefaehrlich, wirkt aber nicht wie Dauerbeschuss.
-            lavaStossCooldown = 430 + zufall.nextInt(310);
+            lavaStossCooldown = 210 + zufall.nextInt(170);
         }
     }
 
@@ -270,17 +276,6 @@ public class GamePanel extends JPanel {
         for (FallingRock stein : fallendeSteine) {
             stein.bewegeNachUnten(distanz);
         }
-    }
-
-    private void hintergrundScrollAktualisieren() {
-        double differenz = punktzahl - hintergrundScroll;
-
-        if (Math.abs(differenz) < 0.05) {
-            hintergrundScroll = punktzahl;
-            return;
-        }
-
-        hintergrundScroll += differenz * HINTERGRUND_SCROLL_GLAETTUNG;
     }
 
     private void fallendeSteineAktualisieren() {
@@ -331,10 +326,11 @@ public class GamePanel extends JPanel {
         todesUrsache = null;
         todesStein = null;
         sterbeAnimationZaehler = 0;
+        anleitungAnzeigen = false;
         punktzahl = 0;
-        hintergrundScroll = 0.0;
-        // Erster Lava-Stoss kommt erst mit Abstand nach dem Erreichen der Score-Grenze.
-        lavaStossCooldown = 520;
+        hintergrundScroll = 0;
+        // Erster Lava-Stoss kommt kurz nach dem Erreichen der Score-Grenze.
+        lavaStossCooldown = ERSTER_LAVA_STOSS_COOLDOWN;
         // Der erste Deckenstein kommt erst nach kurzer Spielzeit.
         steinCooldown = 240;
 
@@ -392,6 +388,30 @@ public class GamePanel extends JPanel {
                 if (spielZustand == GameState.GAME_OVER) {
                     // Stoppt das Spiel und zeigt das Hauptmenue.
                     zumMenuWechseln();
+                }
+            }
+        });
+
+        // Registriert H als globalen Hotkey fuer die Spielanleitung.
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("H"), "anleitung");
+        // Verknuepft H mit dem Ein- und Ausblenden der Anleitung.
+        getActionMap().put("anleitung", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                anleitungAnzeigen = !anleitungAnzeigen;
+                repaint();
+            }
+        });
+
+        // Registriert Escape zum Schliessen der Anleitung.
+        getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("ESCAPE"), "anleitungSchliessen");
+        // Verknuepft Escape mit dem Schliessen der Anleitung.
+        getActionMap().put("anleitungSchliessen", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (anleitungAnzeigen) {
+                    anleitungAnzeigen = false;
+                    repaint();
                 }
             }
         });
@@ -458,7 +478,7 @@ public class GamePanel extends JPanel {
         }
         lava.draw(g);
         lavaStossWarnungenZeichnen(g);
-        if (!istLavaTodAnimation()) {
+        if (spielZustand != GameState.GAME_OVER && !istLavaTodAnimation()) {
             spielerZeichnen(g);
         }
 
@@ -470,6 +490,10 @@ public class GamePanel extends JPanel {
 
         if (spielZustand == GameState.GAME_OVER) {
             gameOverZeichnen(g);
+        }
+
+        if (anleitungAnzeigen) {
+            anleitungZeichnen(g);
         }
     }
 
@@ -574,6 +598,45 @@ public class GamePanel extends JPanel {
         g2.dispose();
     }
 
+    private void anleitungZeichnen(Graphics g) {
+        Graphics2D g2 = (Graphics2D) g.create();
+
+        g2.setColor(new Color(16, 13, 11, 225));
+        g2.fillRoundRect(35, 70, 330, 345, 12, 12);
+        g2.setColor(new Color(132, 82, 39));
+        g2.drawRoundRect(35, 70, 330, 345, 12, 12);
+        g2.drawRoundRect(39, 74, 322, 337, 8, 8);
+
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 24));
+        g2.setColor(new Color(246, 218, 152));
+        zentriertenTextZeichnen(g2, "Anleitung", 108);
+
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        g2.setColor(new Color(232, 205, 151));
+        g2.drawString("Spring von Plattform zu Plattform.", 62, 144);
+        g2.drawString("Weiche Lava, Feuerstößen und", 62, 166);
+        g2.drawString("fallenden Steinen aus.", 62, 188);
+
+        g2.setFont(new Font(Font.MONOSPACED, Font.BOLD, 15));
+        g2.setColor(new Color(255, 230, 166));
+        g2.drawString("Tasten:", 62, 224);
+        tastenZeileZeichnen(g2, "A", "nach links laufen", 62, 250);
+        tastenZeileZeichnen(g2, "D", "nach rechts laufen", 62, 274);
+        tastenZeileZeichnen(g2, "LEER", "springen", 62, 298);
+        tastenZeileZeichnen(g2, "R", "Neustart nach Tod", 62, 322);
+        tastenZeileZeichnen(g2, "M", "Menü nach Tod", 62, 346);
+        tastenZeileZeichnen(g2, "H / ESC", "Anleitung", 62, 370);
+
+        g2.dispose();
+    }
+
+    private void tastenZeileZeichnen(Graphics2D g2, String taste, String beschreibung, int x, int y) {
+        g2.setColor(new Color(255, 232, 164));
+        g2.drawString(taste, x, y);
+        g2.setColor(new Color(220, 196, 142));
+        g2.drawString(beschreibung, x + 92, y);
+    }
+
     private void hintergrundZeichnen(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
@@ -590,7 +653,7 @@ public class GamePanel extends JPanel {
 
         int skalierteStartBildHoehe = startHoehlenBild.getHeight() * bildschirmBreite / startHoehlenBild.getWidth();
         int skalierteHauptBildHoehe = hoehlenHauptBild.getHeight() * bildschirmBreite / hoehlenHauptBild.getWidth();
-        int startBildY = (int) Math.round(bildschirmHoehe - skalierteStartBildHoehe + hintergrundScroll);
+        int startBildY = bildschirmHoehe - skalierteStartBildHoehe + hintergrundScroll;
 
         int hauptBildY = startBildY - skalierteHauptBildHoehe;
         while (hauptBildY > -skalierteHauptBildHoehe) {
