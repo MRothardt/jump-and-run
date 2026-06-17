@@ -16,12 +16,15 @@ public class FallingRock {
     private static final BufferedImage warnBild = ladeBild("falling_rock_warning.png");
 
     private int x;
-    private int y;
+    private double y;
     private int breite;
     private int hoehe;
     private int alter;
     private int warnDauer;
-    private final int fallGeschwindigkeit;
+    private double geschwindigkeitY;
+    private final double startFallGeschwindigkeit;
+    private final double fallBeschleunigung;
+    private final double maximaleFallGeschwindigkeit;
 
     public FallingRock(int x) {
         this.x = x;
@@ -31,17 +34,19 @@ public class FallingRock {
         this.alter = 0;
         // Die Warnung bleibt lang genug sichtbar, damit der Spieler ausweichen kann.
         this.warnDauer = 85;
-        // Konstante Fallgeschwindigkeit: Der Stein wird nicht mit der Zeit schneller.
-        this.fallGeschwindigkeit = 5;
+        // Der Stein faellt mit leichter Beschleunigung, damit die Bewegung natuerlicher wirkt.
+        this.startFallGeschwindigkeit = 4.2;
+        this.fallBeschleunigung = 0.18;
+        this.maximaleFallGeschwindigkeit = 9.0;
+        this.geschwindigkeitY = startFallGeschwindigkeit;
     }
 
     public void aktualisieren() {
         alter++;
 
         if (!istInWarnphase()) {
-            // Die Fallgeschwindigkeit ist absichtlich nur dieser feste Wert.
-            // Kamera-Scroll oder Spielergeschwindigkeit duerfen den Stein nicht beschleunigen.
-            y += fallGeschwindigkeit;
+            geschwindigkeitY = Math.min(maximaleFallGeschwindigkeit, geschwindigkeitY + fallBeschleunigung);
+            y += geschwindigkeitY;
         }
     }
 
@@ -80,12 +85,12 @@ public class FallingRock {
         g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 
         if (steinBild != null) {
-            g2.drawImage(steinBild, x, y, breite, hoehe, null);
+            g2.drawImage(steinBild, x, getGerundetesY(), breite, hoehe, null);
         } else {
             g2.setColor(new Color(80, 84, 82));
-            g2.fillRect(x, y, breite, hoehe);
+            g2.fillRect(x, getGerundetesY(), breite, hoehe);
             g2.setColor(new Color(30, 32, 32));
-            g2.drawRect(x, y, breite - 1, hoehe - 1);
+            g2.drawRect(x, getGerundetesY(), breite - 1, hoehe - 1);
         }
 
         g2.dispose();
@@ -100,8 +105,8 @@ public class FallingRock {
                 spieler.getX() + spieler.getWidth() > x
                         && spieler.getX() < x + breite;
         boolean vertikal =
-                spieler.getY() + spieler.getHeight() > y
-                        && spieler.getY() < y + hoehe;
+                spieler.getY() + spieler.getHeight() > getGerundetesY()
+                        && spieler.getY() < getGerundetesY() + hoehe;
 
         if (!horizontal || !vertikal) {
             return false;
@@ -117,13 +122,14 @@ public class FallingRock {
     private boolean trifftSichtbareTextur(Player spieler) {
         int links = Math.max(spieler.getX(), x);
         int rechts = Math.min(spieler.getX() + spieler.getWidth(), x + breite);
-        int oben = Math.max(spieler.getY(), y);
-        int unten = Math.min(spieler.getY() + spieler.getHeight(), y + hoehe);
+        int steinY = getGerundetesY();
+        int oben = Math.max(spieler.getY(), steinY);
+        int unten = Math.min(spieler.getY() + spieler.getHeight(), steinY + hoehe);
 
         for (int pruefY = oben; pruefY < unten; pruefY += 3) {
             for (int pruefX = links; pruefX < rechts; pruefX += 3) {
                 int bildX = (pruefX - x) * steinBild.getWidth() / breite;
-                int bildY = (pruefY - y) * steinBild.getHeight() / hoehe;
+                int bildY = (pruefY - steinY) * steinBild.getHeight() / hoehe;
 
                 if (bildX >= 0
                         && bildX < steinBild.getWidth()
@@ -142,8 +148,20 @@ public class FallingRock {
         return y > 650;
     }
 
+    public void bewegeNachUnten(int distanz) {
+        if (istInWarnphase()) {
+            return;
+        }
+
+        y += distanz;
+    }
+
     private boolean istInWarnphase() {
         return alter < warnDauer;
+    }
+
+    private int getGerundetesY() {
+        return (int) Math.round(y);
     }
 
     private static BufferedImage ladeBild(String dateiname) {

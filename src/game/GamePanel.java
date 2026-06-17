@@ -45,6 +45,7 @@ public class GamePanel extends JPanel {
     private static final BufferedImage gameOverTafelBild = ladeBild("game_over_panel.png");
     private static final int LAVA_TOD_ANIMATION_DAUER = 26;
     private static final int STEIN_TOD_ANIMATION_DAUER = 18;
+    private static final double HINTERGRUND_SCROLL_GLAETTUNG = 0.22;
 
     private final int bildschirmBreite = 400;
     private final int bildschirmHoehe = 600;
@@ -72,6 +73,7 @@ public class GamePanel extends JPanel {
     private Timer timer;
 
     private int punktzahl;
+    private double hintergrundScroll;
     private int lavaStossCooldown;
     private int steinCooldown;
     private Random zufall;
@@ -150,6 +152,7 @@ public class GamePanel extends JPanel {
         lavaAktualisieren(hoehenFortschritt);
         lavaStoesseAktualisieren();
         fallendeSteineAktualisieren();
+        hintergrundScrollAktualisieren();
 
         if (kollisionsManager.checkLavaCollision(spieler, lava) || lavaStossTrifftSpieler()) {
             sterbeAnimationStarten(TodesUrsache.LAVA, null);
@@ -215,9 +218,7 @@ public class GamePanel extends JPanel {
             spieler.bewegeNachUnten(verschiebung);
             plattformManager.bewegeAllePlattformenNachUnten(verschiebung);
             lavaStoesseNachUntenBewegen(verschiebung);
-            // Fallende Steine werden hier bewusst NICHT bewegt.
-            // Sie fallen mit fester Bildschirmgeschwindigkeit und sollen nicht
-            // schneller/langsamer werden, nur weil der Spieler schnell hochspringt.
+            fallendeSteineNachUntenBewegen(verschiebung);
 
             punktzahl += verschiebung;
             return verschiebung;
@@ -263,6 +264,23 @@ public class GamePanel extends JPanel {
         for (LavaBurst lavaStoss : lavaStoesse) {
             lavaStoss.bewegeNachUnten(distanz);
         }
+    }
+
+    private void fallendeSteineNachUntenBewegen(int distanz) {
+        for (FallingRock stein : fallendeSteine) {
+            stein.bewegeNachUnten(distanz);
+        }
+    }
+
+    private void hintergrundScrollAktualisieren() {
+        double differenz = punktzahl - hintergrundScroll;
+
+        if (Math.abs(differenz) < 0.05) {
+            hintergrundScroll = punktzahl;
+            return;
+        }
+
+        hintergrundScroll += differenz * HINTERGRUND_SCROLL_GLAETTUNG;
     }
 
     private void fallendeSteineAktualisieren() {
@@ -314,6 +332,7 @@ public class GamePanel extends JPanel {
         todesStein = null;
         sterbeAnimationZaehler = 0;
         punktzahl = 0;
+        hintergrundScroll = 0.0;
         // Erster Lava-Stoss kommt erst mit Abstand nach dem Erreichen der Score-Grenze.
         lavaStossCooldown = 520;
         // Der erste Deckenstein kommt erst nach kurzer Spielzeit.
@@ -571,7 +590,7 @@ public class GamePanel extends JPanel {
 
         int skalierteStartBildHoehe = startHoehlenBild.getHeight() * bildschirmBreite / startHoehlenBild.getWidth();
         int skalierteHauptBildHoehe = hoehlenHauptBild.getHeight() * bildschirmBreite / hoehlenHauptBild.getWidth();
-        int startBildY = bildschirmHoehe - skalierteStartBildHoehe + punktzahl;
+        int startBildY = (int) Math.round(bildschirmHoehe - skalierteStartBildHoehe + hintergrundScroll);
 
         int hauptBildY = startBildY - skalierteHauptBildHoehe;
         while (hauptBildY > -skalierteHauptBildHoehe) {
