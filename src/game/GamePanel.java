@@ -560,7 +560,7 @@ public class GamePanel extends JPanel {
             g2.fillRect(x - 2, y + groesse, groesse + 4, 3);
         }
 
-        int overlayY = Math.max(0, lavaY - 18);
+        int overlayY = lavaY;
         int overlayAlpha = Math.min(120, 25 + (int) (fortschritt * 95));
         g2.setColor(new Color(255, 82, 14, overlayAlpha));
         g2.fillRect(0, overlayY, bildschirmBreite, bildschirmHoehe - overlayY);
