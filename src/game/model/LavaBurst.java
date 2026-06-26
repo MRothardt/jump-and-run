@@ -167,11 +167,6 @@ public class LavaBurst {
         return alter < warnDauer;
     }
 
-    private boolean istImAufbau() {
-        int schussAlter = alter - warnDauer;
-        return schussAlter > 0 && schussAlter < schussDauer;
-    }
-
     private int getUnten() {
         return basisY + startUnterDerLava;
     }

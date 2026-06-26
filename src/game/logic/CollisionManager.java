@@ -10,9 +10,8 @@ import game.model.Player;
 
 public class CollisionManager {
 
-    public boolean checkPlatformCollision(Player spieler, PlatformManager plattformManager) {
+    public void checkPlatformCollision(Player spieler, PlatformManager plattformManager) {
         spieler.setOnGround(false);
-        boolean trampolinWurdeAusgeloest = false;
 
         for (Platform plattform : plattformManager.getPlatforms()) {
 
@@ -29,7 +28,6 @@ public class CollisionManager {
             if (spielerFaellt && spielerBeruehrtPlattformVonOben && spielerIstHorizontalAufPlattform) {
                 if (plattform.getPlattformTyp() == PlatformType.TRAMPOLIN) {
                     spieler.springeVonTrampolin(plattform.getY());
-                    trampolinWurdeAusgeloest = true;
                 } else {
                     spieler.landOnPlatform(plattform.getY());
                 }
@@ -37,8 +35,6 @@ public class CollisionManager {
                 plattform.beruehren();
             }
         }
-
-        return trampolinWurdeAusgeloest;
     }
 
     public boolean checkLavaCollision(Player spieler, Lava lava) {

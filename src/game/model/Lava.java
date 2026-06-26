@@ -114,8 +114,4 @@ public class Lava {
     public int getY() {
         return (int) y;
     }
-
-    public int getHeight() {
-        return bildschirmHoehe - (int) y;
-    }
 }

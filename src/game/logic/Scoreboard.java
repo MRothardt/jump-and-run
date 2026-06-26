@@ -69,10 +69,6 @@ public class Scoreboard {
         return eintraege.get(0).getScore();
     }
 
-    public synchronized String getLetzterSpielerName() {
-        return letzterSpielerName;
-    }
-
     public synchronized List<ScoreEintrag> getEintraege() {
         return new ArrayList<>(eintraege);
     }
