@@ -2,7 +2,7 @@ Lava Miner
 
 Beschreibung
 Lava Miner ist ein Java-Jump-and-Run-Spiel. Der Spieler springt von Plattform zu
-Plattform, sammelt Hoehenfortschritt als Punktzahl und muss Lava, Lava-Stoessen
+Plattform, sammelt Hoehenfortschritt als Punktzahl und muss Lava, Lava-Stössen
 und fallenden Steinen ausweichen.
 
 Das Spiel kann in der Entwicklungsumgebung über die Klasse Main gestartet
